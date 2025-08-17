@@ -1,0 +1,11 @@
+{
+  "hosting": {
+    "site": "pourpal-9bc4a",
+    "public": "build",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ]
+  }
+}

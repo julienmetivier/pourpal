@@ -1,26 +1,78 @@
-import React from 'react';
-import logo from './logo.svg';
-import './App.css';
+import { useState } from "react";
+import { getAuth, signInWithEmailAndPassword } from "firebase/auth";
+import { getFirestore, collection, addDoc } from "firebase/firestore";
+import {
+  App as Framework7App,
+  View,
+  Page,
+  Navbar,
+  List,
+  ListInput,
+  Button,
+} from "framework7-react";
 
-function App() {
+import app from "./firebaseConfig";
+
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+const PourPal = () => {
+  const [employeeId, setEmployeeId] = useState("");
+  const [password, setPassword] = useState("");
+  const [drink, setDrink] = useState("");
+
+  const login = async () => {
+    await signInWithEmailAndPassword(auth, `${employeeId}@pourpal.com`, password);
+  };
+
+  const sendOrder = async () => {
+    await addDoc(collection(db, "orders"), { drink, employeeId, timestamp: Date.now() });
+  };
+
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.tsx</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
-  );
-}
+    <Framework7App>
+      <View main>
+        <Page>
+          <Navbar title="PourPal" />
 
-export default App;
+          <List>
+            <ListInput
+              label="Employee ID"
+              type="text"
+              placeholder="Enter your Employee ID"
+              value={employeeId}
+              onInput={(e) => setEmployeeId((e.target as HTMLInputElement).value)}
+            />
+            <ListInput
+              label="PIN"
+              type="password"
+              placeholder="Enter your PIN"
+              value={password}
+              onInput={(e) => setPassword((e.target as HTMLInputElement).value)}
+            />
+          </List>
+
+          <Button fill onClick={login}>
+            Login
+          </Button>
+
+          <List>
+            <ListInput
+              label="Drink"
+              type="text"
+              placeholder="Enter your drink"
+              value={drink}
+              onInput={(e) => setDrink((e.target as HTMLInputElement).value)}
+            />
+          </List>
+
+          <Button fill color="green" onClick={sendOrder}>
+            Order
+          </Button>
+        </Page>
+      </View>
+    </Framework7App>
+  );
+};
+
+export default PourPal;
