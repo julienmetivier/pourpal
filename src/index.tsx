@@ -4,10 +4,14 @@ import './index.css';
 import App from './App';
 import reportWebVitals from './reportWebVitals';
 
+// Framework7 core and React bindings
 import Framework7 from 'framework7';
 import Framework7React from 'framework7-react';
 
-// Init F7-React Plugin
+// Framework7 CSS
+import 'framework7/css/bundle';
+
+// Tell Framework7 to use React plugin
 Framework7.use(Framework7React);
 
 const root = ReactDOM.createRoot(
