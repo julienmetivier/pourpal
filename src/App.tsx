@@ -26,7 +26,13 @@ const PourPal = () => {
   };
 
   const sendOrder = async () => {
-    await addDoc(collection(db, "orders"), { drink, employeeId, timestamp: Date.now() });
+    const docRef = await addDoc(collection(db, "orders"), {
+      drink,
+      employeeId,
+      timestamp: Date.now(),
+      status: "pending",
+    });
+    console.log("Order sent! Document ID:", docRef.id);
   };
 
   return (
