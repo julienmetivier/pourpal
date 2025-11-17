@@ -1,16 +1,20 @@
+// App.tsx
 import { useState, useEffect } from "react";
 import {
   App as Framework7App,
   View,
   Page,
   Navbar,
-  List,
-  ListInput,
-  Button,
-  Block,
-  Badge,
   NavTitle,
   NavRight,
+  List,
+  ListInput,
+  Toolbar,
+  Tabs,
+  Tab,
+  Button,
+  Block,
+  Link,
 } from "framework7-react";
 import {
   getAuth,
@@ -18,21 +22,16 @@ import {
   onAuthStateChanged,
   signOut,
 } from "firebase/auth";
-import { getFirestore, collection, addDoc } from "firebase/firestore";
 
-import DrinksList from "./DrinksList";
 import PinPad from "./PinPad";
-
+import Order from "./container/Order";
 import app from "./firebaseConfig";
 
 const auth = getAuth(app);
-const db = getFirestore(app);
 
 const PourPal = () => {
   const [employeeId, setEmployeeId] = useState("julien");
   const [password, setPassword] = useState("");
-  const [drink, setDrink] = useState("");
-  const [clientName, setClientName] = useState("");
   const [user, setUser] = useState<null | any>(null);
 
   useEffect(() => {
@@ -57,30 +56,10 @@ const PourPal = () => {
     await signOut(auth);
   };
 
-  const sendOrder = async () => {
-    if (!user) {
-      alert("You must be logged in to place an order.");
-      return;
-    }
-
-    const docRef = await addDoc(collection(db, "orders"), {
-      drink,
-      clientName,
-      employeeId,
-      timestamp: Date.now(),
-      status: "pending",
-      uid: user.uid,
-    });
-
-    console.log("Order sent! Document ID:", docRef.id);
-    setDrink("");
-    setClientName("");
-  };
-
   return (
     <Framework7App>
       <View main>
-        <Page>
+        <Page pageContent={false}>
           <Navbar>
             <NavTitle>PourPal</NavTitle>
             {user && (
@@ -99,7 +78,7 @@ const PourPal = () => {
             )}
           </Navbar>
 
-          {/* Not logged in → show login screen */}
+          {/* Not logged in → login screen */}
           {!user && (
             <Block strong>
               <List>
@@ -116,11 +95,7 @@ const PourPal = () => {
                 <PinPad
                   length={6}
                   onChange={(pin) => setPassword(pin)}
-                  onComplete={(pin) => {
-                    setPassword(pin);
-                    // optionally auto-attempt login here:
-                    // login();
-                  }}
+                  onComplete={(pin) => setPassword(pin)}
                 />
               </List>
               <Button fill onClick={login}>
@@ -129,35 +104,31 @@ const PourPal = () => {
             </Block>
           )}
 
-          {/* Logged in → show drinks + client name + order */}
+          {/* Logged in → Order page */}
           {user && (
-            <Block strong>
-              <DrinksList
-                selectedDrink={drink}
-                onChange={(selected) => setDrink(selected)}
-              />
+            <>
+              <Toolbar bottom tabbar>
+                <Link tabLink="#tab-1" tabLinkActive>
+                  Tab 1
+                </Link>
+                <Link tabLink="#tab-2">
+                  Tab 2
+                </Link>
+              </Toolbar>
 
-              <List>
-                <ListInput
-                  label="Client Name"
-                  type="text"
-                  placeholder="Enter client name"
-                  value={clientName}
-                  onInput={(e) =>
-                    setClientName((e.target as HTMLInputElement).value)
-                  }
-                />
-              </List>
+              {/* Tabs */}
+              <Tabs animated>
+                <Tab id="tab-1" className="page-content" tabActive>
+                  <Block strong>
+                    <Order employeeId={employeeId} user={user} />
+                  </Block>
+                </Tab>
 
-              <Button
-                fill
-                color="green"
-                disabled={!drink || !clientName}
-                onClick={sendOrder}
-              >
-                Place Order
-              </Button>
-            </Block>
+                <Tab id="tab-2" className="page-content">
+                  <Block strong>Bop biip</Block>
+                </Tab>
+              </Tabs>
+            </>
           )}
         </Page>
       </View>

@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
-import { Page, Navbar, Block, List, ListItem, Icon, Badge } from "framework7-react";
+import { Block, List, ListItem, Badge } from "framework7-react";
 import { collection, getDocs, getFirestore } from "firebase/firestore";
-import app from "./firebaseConfig";
+import app from "../firebaseConfig";
 
 const db = getFirestore(app);
 
@@ -60,18 +60,21 @@ const DrinksList: React.FC<DrinksListProps> = ({ selectedDrink, onChange }) => {
       <ListItem
         key={drink.id}
         title={drink.name}
-        media={getIcon(drink.icon)}
-        className={[
-          !drink.available ? "opacity-50" : "",
-          isSelected ? "bg-color-green text-color-white" : "",
-        ].join(" ")}
+        className={!drink.available ? "opacity-50" : ""}
+        style={{
+          boxShadow: isSelected ? "0 0 0 2px darkgreen inset" : "none",
+          borderRadius: "12px",
+        }}
         disabled={!drink.available}
         onClick={() => drink.available && onChange(drink.name)}
       >
+        <div slot="media" style={{ fontSize: 24 }}>
+          {getIcon(drink.icon)}
+        </div>
         <span slot="after">
           {drink.available ? (
-            <Badge color={isSelected ? "white" : "green"}>
-              {isSelected ? "Selected" : "Available"}
+            <Badge color="green">
+              Available
             </Badge>
           ) : (
             <Badge color="gray">Out</Badge>
