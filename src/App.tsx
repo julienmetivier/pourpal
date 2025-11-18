@@ -25,6 +25,7 @@ import {
 
 import PinPad from "./PinPad";
 import Order from "./container/Order";
+import OrdersList from "./container/OrdersList";
 import app from "./firebaseConfig";
 
 const auth = getAuth(app);
@@ -33,6 +34,7 @@ const PourPal = () => {
   const [employeeId, setEmployeeId] = useState("julien");
   const [password, setPassword] = useState("");
   const [user, setUser] = useState<null | any>(null);
+  const [activeTab, setActiveTab] = useState("tab-1");
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (u) => setUser(u));
@@ -59,7 +61,7 @@ const PourPal = () => {
   return (
     <Framework7App>
       <View main>
-        <Page pageContent={false}>
+        <Page>
           <Navbar>
             <NavTitle>PourPal</NavTitle>
             {user && (
@@ -107,27 +109,36 @@ const PourPal = () => {
           {/* Logged in → Order page */}
           {user && (
             <>
-              <Toolbar bottom tabbar>
-                <Link tabLink="#tab-1" tabLinkActive>
-                  Tab 1
-                </Link>
-                <Link tabLink="#tab-2">
-                  Tab 2
-                </Link>
-              </Toolbar>
-
-              {/* Tabs */}
-              <Tabs animated>
-                <Tab id="tab-1" className="page-content" tabActive>
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+                {activeTab === "tab-1" && (
                   <Block strong>
                     <Order employeeId={employeeId} user={user} />
                   </Block>
-                </Tab>
-
-                <Tab id="tab-2" className="page-content">
-                  <Block strong>Bop biip</Block>
-                </Tab>
-              </Tabs>
+                )}
+                {activeTab === "tab-2" && (
+                  <OrdersList />
+                )}
+              </div>
+              <Toolbar bottom tabbar style={{ position: 'fixed', bottom: 0, left: 0, right: 0 }}>
+                <Link 
+                  onClick={() => setActiveTab("tab-1")}
+                  style={{ 
+                    color: activeTab === "tab-1" ? '#007aff' : '#8e8e93',
+                    fontWeight: activeTab === "tab-1" ? 'bold' : 'normal'
+                  }}
+                >
+                  New Order
+                </Link>
+                <Link 
+                  onClick={() => setActiveTab("tab-2")}
+                  style={{ 
+                    color: activeTab === "tab-2" ? '#007aff' : '#8e8e93',
+                    fontWeight: activeTab === "tab-2" ? 'bold' : 'normal'
+                  }}
+                >
+                  Orders
+                </Link>
+              </Toolbar>
             </>
           )}
         </Page>

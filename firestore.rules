@@ -6,10 +6,11 @@ service cloud.firestore {
       allow read: if true;
     }
     
-    // Allow write access to orders collection
+    // Allow read and write access to orders collection
     match /orders/{orderId} {
-      allow create: if true;
-      allow read, update, delete: if false; // Only allow creation from client
+      allow read: if true; // Allow reading orders for bartender view
+      allow create: if true; // Allow creating orders from client
+      allow update, delete: if false; // Only backend can update
     }
   }
 }
