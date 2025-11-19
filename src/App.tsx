@@ -26,6 +26,7 @@ import {
 import PinPad from "./PinPad";
 import Order from "./container/Order";
 import OrdersList from "./container/OrdersList";
+import AddDrink from "./container/AddDrink";
 import app from "./firebaseConfig";
 
 const auth = getAuth(app);
@@ -163,6 +164,9 @@ const PourPal = () => {
                 {activeTab === "tab-2" && (
                   <OrdersList />
                 )}
+                {activeTab === "tab-3" && employeeId === "julien" && (
+                  <AddDrink />
+                )}
               </div>
               <Toolbar bottom tabbar style={{ position: 'fixed', bottom: 0, left: 0, right: 0 }}>
                 <Link 
@@ -183,6 +187,17 @@ const PourPal = () => {
                 >
                   Orders
                 </Link>
+                {employeeId === "julien" && (
+                  <Link 
+                    onClick={() => setActiveTab("tab-3")}
+                    style={{ 
+                      color: activeTab === "tab-3" ? '#007aff' : '#8e8e93',
+                      fontWeight: activeTab === "tab-3" ? 'bold' : 'normal'
+                    }}
+                  >
+                    Add Drink
+                  </Link>
+                )}
               </Toolbar>
             </>
           )}
