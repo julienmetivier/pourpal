@@ -35,11 +35,21 @@ const PourPal = () => {
   const [password, setPassword] = useState("");
   const [user, setUser] = useState<null | any>(null);
   const [activeTab, setActiveTab] = useState("tab-1");
+  const [notification, setNotification] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (u) => setUser(u));
     return () => unsubscribe();
   }, []);
+
+  useEffect(() => {
+    if (notification) {
+      const timer = setTimeout(() => {
+        setNotification(null);
+      }, 2000);
+      return () => clearTimeout(timer);
+    }
+  }, [notification]);
 
   const login = async () => {
     try {
@@ -60,6 +70,27 @@ const PourPal = () => {
 
   return (
     <Framework7App>
+      {notification && (
+        <div
+          style={{
+            position: 'fixed',
+            top: '50%',
+            left: '50%',
+            transform: 'translate(-50%, -50%)',
+            backgroundColor: notification.type === 'success' ? '#4CAF50' : '#f44336',
+            color: 'white',
+            padding: '16px 24px',
+            borderRadius: '8px',
+            zIndex: 10000,
+            boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+            fontSize: '16px',
+            textAlign: 'center',
+            minWidth: '250px',
+          }}
+        >
+          {notification.message}
+        </div>
+      )}
       <View main>
         <Page>
           <Navbar>
@@ -96,13 +127,27 @@ const PourPal = () => {
                 </ListInput>
                 <PinPad
                   length={6}
+                  value={password}
                   onChange={(pin) => setPassword(pin)}
-                  onComplete={(pin) => setPassword(pin)}
+                  onComplete={async (pin) => {
+                    setPassword(pin);
+                    try {
+                      await signInWithEmailAndPassword(
+                        auth,
+                        `${employeeId}@pourpal.com`,
+                        pin
+                      );
+                    } catch (err) {
+                      setNotification({
+                        message: '❌ Login failed. Please try again.',
+                        type: 'error'
+                      });
+                      setPassword(""); // Clear the PIN pad on error
+                      console.error(err);
+                    }
+                  }}
                 />
               </List>
-              <Button fill onClick={login}>
-                Login
-              </Button>
             </Block>
           )}
 
