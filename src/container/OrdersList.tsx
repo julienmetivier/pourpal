@@ -18,6 +18,8 @@ type Order = {
 
 const OrdersList: React.FC = () => {
   const [orders, setOrders] = useState<Order[]>([]);
+  const [last24hExpanded, setLast24hExpanded] = useState(true);
+  const [olderExpanded, setOlderExpanded] = useState(false);
 
   useEffect(() => {
     // Query orders, ordered by timestamp (newest first)
@@ -94,48 +96,101 @@ const OrdersList: React.FC = () => {
     }
   };
 
+  // Filter orders into last 24h and older
+  const now = Date.now();
+  const twentyFourHoursAgo = now - (24 * 60 * 60 * 1000);
+  
+  const last24hOrders = orders.filter(order => order.timestamp >= twentyFourHoursAgo);
+  const olderOrders = orders.filter(order => order.timestamp < twentyFourHoursAgo);
+
+  const renderOrderItem = (order: Order) => (
+    <ListItem
+      key={order.id}
+      title={order.drink}
+      style={{
+        backgroundColor: getBackgroundColor(order.status),
+        borderLeft: `4px solid ${getBorderColor(order.status)}`,
+        marginBottom: "8px",
+        borderRadius: "4px",
+        opacity: order.status === "done" || order.status === "failed" ? 0.8 : 1,
+      }}
+    >
+      <div slot="footer" style={{ 
+        fontSize: "13px", 
+        color: "#aaa",
+        marginTop: "4px"
+      }}>
+        <span>{order.clientName}</span>
+        <span style={{ marginLeft: "8px" }}>•</span>
+        <span style={{ marginLeft: "8px" }}>
+          {formatDateTime(order.timestamp)}
+        </span>
+      </div>
+      <Badge 
+        color={getStatusColor(order.status)} 
+        slot="after"
+        style={{ color: "#000" }}
+      >
+        {getStatusLabel(order.status)}
+      </Badge>
+    </ListItem>
+  );
+
   return (
     <Block strong>
       <h2 style={{ marginTop: 0, marginBottom: "16px" }}>Orders</h2>
 
-      {orders.length > 0 && (
-        <List>
-          {orders.map((order) => (
+      {orders.length > 0 ? (
+        <>
+          {/* Last 24h Section - Expanded by default */}
+          <Block>
             <ListItem
-              key={order.id}
-              title={order.drink}
-              style={{
-                backgroundColor: getBackgroundColor(order.status),
-                borderLeft: `4px solid ${getBorderColor(order.status)}`,
-                marginBottom: "8px",
-                borderRadius: "4px",
-                opacity: order.status === "done" || order.status === "failed" ? 0.8 : 1,
-              }}
+              title={`Last 24 Hours (${last24hOrders.length})`}
+              onClick={() => setLast24hExpanded(!last24hExpanded)}
+              style={{ cursor: "pointer", fontWeight: "bold" }}
             >
-              <div slot="footer" style={{ 
-                fontSize: "13px", 
-                color: "#aaa",
-                marginTop: "4px"
-              }}>
-                <span>{order.clientName}</span>
-                <span style={{ marginLeft: "8px" }}>•</span>
-                <span style={{ marginLeft: "8px" }}>
-                  {formatDateTime(order.timestamp)}
-                </span>
+              <div slot="after" style={{ fontSize: "20px" }}>
+                {last24hExpanded ? "▼" : "▶"}
               </div>
-              <Badge 
-                color={getStatusColor(order.status)} 
-                slot="after"
-                style={{ color: "#000" }}
-              >
-                {getStatusLabel(order.status)}
-              </Badge>
             </ListItem>
-          ))}
-        </List>
-      )}
+            {last24hExpanded && (
+              <List>
+                {last24hOrders.length > 0 ? (
+                  last24hOrders.map(renderOrderItem)
+                ) : (
+                  <Block style={{ textAlign: "center", padding: "20px", color: "#666" }}>
+                    <p>No orders in the last 24 hours</p>
+                  </Block>
+                )}
+              </List>
+            )}
+          </Block>
 
-      {orders.length === 0 && (
+          {/* Older Orders Section - Collapsed by default */}
+          <Block>
+            <ListItem
+              title={`Older Orders (${olderOrders.length})`}
+              onClick={() => setOlderExpanded(!olderExpanded)}
+              style={{ cursor: "pointer", fontWeight: "bold" }}
+            >
+              <div slot="after" style={{ fontSize: "20px" }}>
+                {olderExpanded ? "▼" : "▶"}
+              </div>
+            </ListItem>
+            {olderExpanded && (
+              <List>
+                {olderOrders.length > 0 ? (
+                  olderOrders.map(renderOrderItem)
+                ) : (
+                  <Block style={{ textAlign: "center", padding: "20px", color: "#666" }}>
+                    <p>No older orders</p>
+                  </Block>
+                )}
+              </List>
+            )}
+          </Block>
+        </>
+      ) : (
         <Block style={{ textAlign: "center", padding: "40px 20px", color: "#666" }}>
           <p>No orders yet</p>
         </Block>
