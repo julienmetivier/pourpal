@@ -1,7 +1,7 @@
 // AddDrink.tsx
 import { useState, useEffect } from "react";
-import { Block, List, ListInput, Button } from "framework7-react";
-import { getFirestore, collection, addDoc } from "firebase/firestore";
+import { Block, List, ListItem, ListInput, Button, Badge } from "framework7-react";
+import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, onSnapshot } from "firebase/firestore";
 import app from "../firebaseConfig";
 
 const db = getFirestore(app);
@@ -14,11 +14,22 @@ const iconOptions = [
   
   const categories = ["beer", "wine", "cocktail"];
 
+type Drink = {
+  id: string;
+  name: string;
+  icon: string;
+  category: string;
+  available: boolean;
+};
+
 const AddDrink: React.FC = () => {
   const [drinkName, setDrinkName] = useState("");
   const [icon, setIcon] = useState("beer-bottle");
   const [category, setCategory] = useState(categories[0]);
+  const [drinks, setDrinks] = useState<Drink[]>([]);
   const [notification, setNotification] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [drinkToDelete, setDrinkToDelete] = useState<{ id: string; name: string } | null>(null);
 
   useEffect(() => {
     if (notification) {
@@ -28,6 +39,32 @@ const AddDrink: React.FC = () => {
       return () => clearTimeout(timer);
     }
   }, [notification]);
+
+  useEffect(() => {
+    // Listen for real-time updates to drinks
+    const unsubscribe = onSnapshot(collection(db, "drinks"), (snapshot) => {
+      const drinksList: Drink[] = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      })) as Drink[];
+      setDrinks(drinksList);
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  const getIcon = (iconName: string) => {
+    switch (iconName) {
+      case "beer-bottle":
+        return "🍺";
+      case "coupe":
+        return "🍸";
+      case "highball":
+        return "🥃";
+      default:
+        return "🍹";
+    }
+  };
 
   const handleSubmit = async () => {
     if (!drinkName.trim()) {
@@ -62,6 +99,38 @@ const AddDrink: React.FC = () => {
       });
       console.error("Error adding drink:", error);
     }
+  };
+
+  const handleDeleteClick = (drinkId: string, drinkName: string) => {
+    setDrinkToDelete({ id: drinkId, name: drinkName });
+    setDeleteDialogOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!drinkToDelete) return;
+
+    try {
+      await deleteDoc(doc(db, "drinks", drinkToDelete.id));
+      setNotification({
+        message: `✅ Drink "${drinkToDelete.name}" deleted successfully!`,
+        type: 'success'
+      });
+      setDeleteDialogOpen(false);
+      setDrinkToDelete(null);
+    } catch (error) {
+      setNotification({
+        message: '❌ Failed to delete drink. Please try again.',
+        type: 'error'
+      });
+      console.error("Error deleting drink:", error);
+      setDeleteDialogOpen(false);
+      setDrinkToDelete(null);
+    }
+  };
+
+  const cancelDelete = () => {
+    setDeleteDialogOpen(false);
+    setDrinkToDelete(null);
   };
 
   return (
@@ -136,6 +205,95 @@ const AddDrink: React.FC = () => {
           Add Drink
         </Button>
       </Block>
+
+      {/* Existing Drinks List */}
+      <Block strong style={{ marginTop: "24px" }}>
+        <h2 style={{ marginTop: 0, marginBottom: "16px" }}>Existing Drinks</h2>
+        
+        {drinks.length > 0 ? (
+          <List>
+            {drinks.map((drink) => (
+              <ListItem
+                key={drink.id}
+                title={drink.name}
+                subtitle={`${drink.category.charAt(0).toUpperCase() + drink.category.slice(1)} • ${drink.available ? 'Available' : 'Unavailable'}`}
+              >
+                <div slot="media" style={{ fontSize: 24 }}>
+                  {getIcon(drink.icon)}
+                </div>
+                <Button
+                  slot="after"
+                  small
+                  color="red"
+                  onClick={() => handleDeleteClick(drink.id, drink.name)}
+                  style={{ marginLeft: "8px" }}
+                >
+                  Delete
+                </Button>
+              </ListItem>
+            ))}
+          </List>
+        ) : (
+          <Block style={{ textAlign: "center", padding: "40px 20px", color: "#666" }}>
+            <p>No drinks yet. Add your first drink above!</p>
+          </Block>
+        )}
+      </Block>
+
+      {/* Delete Confirmation Modal */}
+      {deleteDialogOpen && (
+        <div
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.7)',
+            zIndex: 10000,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '20px',
+          }}
+          onClick={cancelDelete}
+        >
+          <div
+            style={{
+              backgroundColor: '#1a1a1a',
+              borderRadius: '12px',
+              padding: '24px',
+              maxWidth: '400px',
+              width: '100%',
+              boxShadow: '0 8px 24px rgba(0,0,0,0.5)',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 style={{ marginTop: 0, marginBottom: '16px', color: '#fff' }}>
+              Delete Drink
+            </h3>
+            <p style={{ marginBottom: '24px', color: '#aaa' }}>
+              Are you sure you want to delete "{drinkToDelete?.name}"?
+            </p>
+            <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
+              <Button
+                outline
+                onClick={cancelDelete}
+                style={{ minWidth: '80px' }}
+              >
+                Cancel
+              </Button>
+              <Button
+                color="red"
+                onClick={confirmDelete}
+                style={{ minWidth: '80px' }}
+              >
+                Delete
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 };

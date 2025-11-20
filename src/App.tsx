@@ -195,7 +195,7 @@ const PourPal = () => {
                       fontWeight: activeTab === "tab-3" ? 'bold' : 'normal'
                     }}
                   >
-                    Add Drink
+                    Drinks
                   </Link>
                 )}
               </Toolbar>
