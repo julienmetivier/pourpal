@@ -93,7 +93,7 @@ const PourPal = () => {
         </div>
       )}
       <View main>
-        <Page>
+        <Page dark>
           <Navbar>
             <NavTitle>PourPal</NavTitle>
             {user && (

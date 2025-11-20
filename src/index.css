@@ -11,3 +11,8 @@ code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
 }
+
+/* Make badge text black in dark theme */
+.dark .badge {
+  color: #000 !important;
+}

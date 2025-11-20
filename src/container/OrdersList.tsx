@@ -71,26 +71,26 @@ const OrdersList: React.FC = () => {
   const getBackgroundColor = (status: string) => {
     switch (status) {
       case "pending":
-        return "#fff3e0";
+        return "#2a2418";
       case "done":
-        return "#e8f5e9";
+        return "#1a241a";
       case "failed":
-        return "#ffebee";
+        return "#241a1a";
       default:
-        return "#f5f5f5";
+        return "#1a1a1a";
     }
   };
 
   const getBorderColor = (status: string) => {
     switch (status) {
       case "pending":
-        return "#ff9800";
+        return "#cc7700";
       case "done":
-        return "#4caf50";
+        return "#2d5a2d";
       case "failed":
-        return "#f44336";
+        return "#5a2d2d";
       default:
-        return "#9e9e9e";
+        return "#4a4a4a";
     }
   };
 
@@ -114,7 +114,7 @@ const OrdersList: React.FC = () => {
             >
               <div slot="footer" style={{ 
                 fontSize: "13px", 
-                color: "#999",
+                color: "#aaa",
                 marginTop: "4px"
               }}>
                 <span>{order.clientName}</span>
@@ -123,7 +123,11 @@ const OrdersList: React.FC = () => {
                   {formatDateTime(order.timestamp)}
                 </span>
               </div>
-              <Badge color={getStatusColor(order.status)} slot="after">
+              <Badge 
+                color={getStatusColor(order.status)} 
+                slot="after"
+                style={{ color: "#000" }}
+              >
                 {getStatusLabel(order.status)}
               </Badge>
             </ListItem>
@@ -132,7 +136,7 @@ const OrdersList: React.FC = () => {
       )}
 
       {orders.length === 0 && (
-        <Block style={{ textAlign: "center", padding: "40px 20px", color: "#999" }}>
+        <Block style={{ textAlign: "center", padding: "40px 20px", color: "#666" }}>
           <p>No orders yet</p>
         </Block>
       )}
