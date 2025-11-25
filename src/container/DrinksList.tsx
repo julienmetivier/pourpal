@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Block, List, ListItem, Badge } from "framework7-react";
+import { List, ListItem, Badge } from "framework7-react";
 import { collection, getDocs, getFirestore } from "firebase/firestore";
 import app from "../firebaseConfig";
 
@@ -49,41 +49,53 @@ const DrinksList: React.FC<DrinksListProps> = ({ selectedDrink, onChange }) => {
 
   return (
     <div>
-      <Block strong>
-        <p>Select from available drinks below:</p>
-      </Block>
+      <p style={{ marginBottom: "16px", fontSize: "15px", color: "#aaa", fontWeight: "400" }}>
+        Select from available drinks below:
+      </p>
 
-      <List mediaList>
-  {drinks.map((drink) => {
-    const isSelected = drink.name === selectedDrink;
-    return (
-      <ListItem
-        key={drink.id}
-        title={drink.name}
-        className={!drink.available ? "opacity-50" : ""}
-        style={{
-          boxShadow: isSelected ? "0 0 0 2px darkgreen inset" : "none",
-          borderRadius: "12px",
-        }}
-        disabled={!drink.available}
-        onClick={() => drink.available && onChange(drink.name)}
-      >
-        <div slot="media" style={{ fontSize: 24 }}>
-          {getIcon(drink.icon)}
-        </div>
-        <span slot="after">
-          {drink.available ? (
-            <Badge color="green">
-              Available
-            </Badge>
-          ) : (
-            <Badge color="gray">Out</Badge>
-          )}
-        </span>
-      </ListItem>
-    );
-  })}
-</List>
+      <List mediaList style={{ listStyle: 'none' }}>
+        {drinks.map((drink) => {
+          const isSelected = drink.name === selectedDrink;
+          return (
+            <div key={drink.id} style={{ marginBottom: "12px" }}>
+              <ListItem
+                title={drink.name}
+                className={!drink.available ? "opacity-50" : ""}
+                style={{
+                  boxShadow: isSelected 
+                    ? "0 0 0 2px #4CAF50 inset" 
+                    : "0 2px 6px rgba(0,0,0,0.2)",
+                  borderRadius: "12px",
+                  padding: "16px",
+                  backgroundColor: isSelected 
+                    ? "rgba(76, 175, 80, 0.15)" 
+                    : "rgba(255, 255, 255, 0.05)",
+                  border: isSelected 
+                    ? "1px solid rgba(76, 175, 80, 0.3)" 
+                    : "1px solid rgba(255, 255, 255, 0.1)",
+                  transition: "all 0.2s ease",
+                  marginBottom: 0,
+                }}
+                disabled={!drink.available}
+                onClick={() => drink.available && onChange(drink.name)}
+              >
+                <div slot="media" style={{ fontSize: 28, marginRight: "12px" }}>
+                  {getIcon(drink.icon)}
+                </div>
+                <span slot="after">
+                  {drink.available ? (
+                    <Badge color="green" style={{ fontWeight: "600" }}>
+                      Available
+                    </Badge>
+                  ) : (
+                    <Badge color="gray" style={{ fontWeight: "600" }}>Out</Badge>
+                  )}
+                </span>
+              </ListItem>
+            </div>
+          );
+        })}
+      </List>
     </div>
   );
 };

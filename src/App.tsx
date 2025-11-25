@@ -10,8 +10,6 @@ import {
   List,
   ListInput,
   Toolbar,
-  Tabs,
-  Tab,
   Button,
   Block,
   Link,
@@ -51,19 +49,6 @@ const PourPal = () => {
       return () => clearTimeout(timer);
     }
   }, [notification]);
-
-  const login = async () => {
-    try {
-      await signInWithEmailAndPassword(
-        auth,
-        `${employeeId}@pourpal.com`,
-        password
-      );
-    } catch (err) {
-      alert("Login failed");
-      console.error(err);
-    }
-  };
 
   const logout = async () => {
     await signOut(auth);
@@ -168,7 +153,15 @@ const PourPal = () => {
                   <AddDrink />
                 )}
               </div>
-              <Toolbar bottom tabbar style={{ position: 'fixed', bottom: 0, left: 0, right: 0 }}>
+              <Toolbar bottom tabbar style={{ 
+                position: 'fixed', 
+                bottom: 0, 
+                left: 0, 
+                right: 0,
+                paddingBottom: 'env(safe-area-inset-bottom, 0px)',
+                height: 'auto',
+                minHeight: '56px',
+              }}>
                 <Link 
                   onClick={() => setActiveTab("tab-1")}
                   style={{ 

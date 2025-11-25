@@ -85,39 +85,64 @@ const Order: React.FC<OrderProps> = ({ employeeId, user }) => {
           {notification.message}
         </div>
       )}
-      <Block strong>
-        <DrinksList
-        selectedDrink={drink}
-        onChange={(selected) => {
-          if (selected === drink) {
-            setDrink("");
-            return;
-          }
-          setDrink(selected);
-        }}
-      />
+      <div style={{ display: 'flex', flexDirection: 'column', height: '100%', paddingBottom: '140px' }}>
+        <Block strong>
+          <h2 style={{ marginTop: 0, marginBottom: "24px", fontSize: "24px", fontWeight: "600" }}>
+            New Order
+          </h2>
+          
+          <div style={{ marginBottom: "24px" }}>
+            <DrinksList
+              selectedDrink={drink}
+              onChange={(selected) => {
+                if (selected === drink) {
+                  setDrink("");
+                  return;
+                }
+                setDrink(selected);
+              }}
+            />
+          </div>
+        </Block>
 
-      <List>
-        <ListInput
-          label="Client Name"
-          type="text"
-          placeholder="Enter client name"
-          value={clientName}
-          onInput={(e) =>
-            setClientName((e.target as HTMLInputElement).value)
-          }
-        />
-      </List>
+        {/* Sticky form at bottom */}
+        <div
+          style={{
+            position: 'fixed',
+            bottom: 'calc(56px + env(safe-area-inset-bottom, 0px))', // Above the toolbar with safe area
+            left: 0,
+            right: 0,
+            backgroundColor: '#1a1a1a',
+            padding: '16px',
+            zIndex: 1000,
+            borderTop: '1px solid rgba(255,255,255,0.1)',
+            boxShadow: '0 -2px 8px rgba(0,0,0,0.3)',
+          }}
+        >
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', paddingBottom: '8px' }}>
+            <List style={{ margin: 0 }}>
+              <ListInput
+                type="text"
+                placeholder="Enter name for order"
+                value={clientName}
+                onInput={(e) =>
+                  setClientName((e.target as HTMLInputElement).value)
+                }
+              />
+            </List>
 
-      <Button
-        fill
-        color="green"
-        disabled={!drink || !clientName}
-        onClick={sendOrder}
-      >
-        Place Order
-      </Button>
-    </Block>
+            <Button
+              fill
+              color="green"
+              disabled={!drink || !clientName}
+              onClick={sendOrder}
+              style={{ fontSize: "16px", fontWeight: "600", padding: "14px", margin: 0 }}
+            >
+              Place Order
+            </Button>
+          </div>
+        </div>
+      </div>
     </>
   );
 };

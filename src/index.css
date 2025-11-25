@@ -16,3 +16,8 @@ code {
 .dark .badge {
   color: #000 !important;
 }
+
+/* Center align content in ListItem item-inner */
+.item-inner {
+  align-content: center;
+}
