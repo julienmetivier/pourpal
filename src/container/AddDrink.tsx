@@ -1,7 +1,7 @@
 // AddDrink.tsx
 import { useState, useEffect } from "react";
 import { Block, List, ListItem, ListInput, Button, Badge } from "framework7-react";
-import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, onSnapshot } from "firebase/firestore";
+import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, onSnapshot, updateDoc } from "firebase/firestore";
 import app from "../firebaseConfig";
 
 const db = getFirestore(app);
@@ -133,6 +133,21 @@ const AddDrink: React.FC = () => {
     setDrinkToDelete(null);
   };
 
+  const handleToggleAvailability = async (drinkId: string, currentAvailability: boolean) => {
+    try {
+      await updateDoc(doc(db, "drinks", drinkId), {
+        available: !currentAvailability,
+      });
+      // No notification needed - the visual switch feedback is sufficient
+    } catch (error) {
+      setNotification({
+        message: '❌ Failed to update availability. Please try again.',
+        type: 'error'
+      });
+      console.error("Error updating drink availability:", error);
+    }
+  };
+
   return (
     <>
       {notification && (
@@ -211,26 +226,81 @@ const AddDrink: React.FC = () => {
         <h2 style={{ marginTop: 0, marginBottom: "16px" }}>Existing Drinks</h2>
         
         {drinks.length > 0 ? (
-          <List>
+          <List style={{ listStyle: 'none', padding: 0 }}>
             {drinks.map((drink) => (
-              <ListItem
-                key={drink.id}
-                title={drink.name}
-                subtitle={`${drink.category.charAt(0).toUpperCase() + drink.category.slice(1)} • ${drink.available ? 'Available' : 'Unavailable'}`}
-              >
+              <div key={drink.id} style={{ marginBottom: "16px" }}>
+                <ListItem
+                  title={drink.name}
+                  subtitle={`${drink.category.charAt(0).toUpperCase() + drink.category.slice(1)} - ${drink.available ? 'Available' : 'Unavailable'}`}
+                  style={{
+                    borderRadius: "12px",
+                    marginBottom: 0,
+                    border: "1px solid rgba(255, 255, 255, 0.15)",
+                    backgroundColor: "rgba(255, 255, 255, 0.03)",
+                    padding: "16px",
+                  }}
+                >
                 <div slot="media" style={{ fontSize: 24 }}>
                   {getIcon(drink.icon)}
                 </div>
-                <Button
-                  slot="after"
-                  small
-                  color="red"
-                  onClick={() => handleDeleteClick(drink.id, drink.name)}
-                  style={{ marginLeft: "8px" }}
-                >
-                  Delete
-                </Button>
+                <div slot="after" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '4px' }}>
+                    <span style={{ fontSize: '12px', color: drink.available ? '#4CAF50' : '#999' }}>
+                      {drink.available ? 'Available' : 'Unavailable'}
+                    </span>
+                    <div
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        e.preventDefault();
+                        handleToggleAvailability(drink.id, drink.available);
+                      }}
+                      onMouseDown={(e) => {
+                        e.stopPropagation();
+                        e.preventDefault();
+                      }}
+                      style={{
+                        width: '50px',
+                        height: '28px',
+                        borderRadius: '14px',
+                        backgroundColor: drink.available ? '#4CAF50' : '#666',
+                        position: 'relative',
+                        cursor: 'pointer',
+                        transition: 'background-color 0.3s ease',
+                        padding: '2px',
+                        boxSizing: 'border-box',
+                        flexShrink: 0,
+                        userSelect: 'none',
+                        WebkitTapHighlightColor: 'transparent',
+                      }}
+                    >
+                      <div
+                        style={{
+                          width: '24px',
+                          height: '24px',
+                          borderRadius: '50%',
+                          backgroundColor: '#fff',
+                          position: 'absolute',
+                          top: '2px',
+                          left: drink.available ? '24px' : '2px',
+                          transition: 'left 0.3s ease',
+                          boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
+                        }}
+                      />
+                    </div>
+                  </div>
+                  <Button
+                    small
+                    color="red"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDeleteClick(drink.id, drink.name);
+                    }}
+                  >
+                    Delete
+                  </Button>
+                </div>
               </ListItem>
+              </div>
             ))}
           </List>
         ) : (

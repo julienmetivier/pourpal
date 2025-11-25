@@ -1,12 +1,12 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Allow read, create, and delete access to drinks collection
+    // Allow read, create, update, and delete access to drinks collection
     match /drinks/{drinkId} {
       allow read: if true;
       allow create: if true; // Allow creating drinks (for manager/bartender)
+      allow update: if true; // Allow updating drinks (e.g., availability status)
       allow delete: if true; // Allow deleting drinks (for manager/bartender)
-      allow update: if false; // Only allow creation/deletion for now
     }
     
     // Allow read and write access to orders collection
