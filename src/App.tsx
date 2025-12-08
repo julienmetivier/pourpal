@@ -30,7 +30,7 @@ import app from "./firebaseConfig";
 const auth = getAuth(app);
 
 const PourPal = () => {
-  const [employeeId, setEmployeeId] = useState("julien");
+  const [employeeId, setEmployeeId] = useState("guest");
   const [password, setPassword] = useState("");
   const [user, setUser] = useState<null | any>(null);
   const [activeTab, setActiveTab] = useState("tab-1");
@@ -109,6 +109,7 @@ const PourPal = () => {
                     setEmployeeId((e.target as HTMLSelectElement).value)
                   }
                 >
+                  <option value="guest">guest</option>
                   <option value="julien">julien</option>
                 </ListInput>
                 <PinPad
