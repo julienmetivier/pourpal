@@ -49,6 +49,18 @@ const PourPal = () => {
     }
   }, [notification]);
 
+  // Reset password when login is successful
+  useEffect(() => {
+    if (user) {
+      setPassword("");
+    }
+  }, [user]);
+
+  // Reset password when employee selection changes
+  useEffect(() => {
+    setPassword("");
+  }, [employeeId]);
+
   const logout = async () => {
     await signOut(auth);
   };
@@ -113,7 +125,7 @@ const PourPal = () => {
                           key={employee}
                           onClick={() => setEmployeeId(employee)}
                           style={{
-                            padding: '12px 24px',
+                            padding: '24px 36px',
                             borderRadius: '24px',
                             border: isSelected 
                               ? '2px solid #007aff' 
@@ -122,7 +134,7 @@ const PourPal = () => {
                               ? 'rgba(0, 122, 255, 0.2)' 
                               : 'rgba(255, 255, 255, 0.05)',
                             color: isSelected ? '#007aff' : '#fff',
-                            fontSize: '16px',
+                            fontSize: '20px',
                             fontWeight: isSelected ? '600' : '400',
                             cursor: 'pointer',
                             transition: 'all 0.2s ease',
@@ -130,7 +142,7 @@ const PourPal = () => {
                             outline: 'none',
                             marginTop: index > 0 ? '12px' : '0',
                             width: 'auto',
-                            minWidth: '120px'
+                            minWidth: '180px'
                           }}
                         >
                           {employee}

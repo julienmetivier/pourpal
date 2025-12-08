@@ -109,17 +109,19 @@ const Order: React.FC<OrderProps> = ({ employeeId, user }) => {
         <div
           style={{
             position: 'fixed',
-            bottom: 'calc(56px + env(safe-area-inset-bottom, 0px))', // Above the toolbar with safe area
-            left: 0,
-            right: 0,
-            backgroundColor: '#1a1a1a',
-            padding: '16px',
+            bottom: 'calc(56px + env(safe-area-inset-bottom, 0px) + 16px)', // Above the toolbar with safe area + spacing
+            left: '16px',
+            right: '16px',
+            backgroundColor: 'rgba(26, 26, 26, 0.95)',
+            padding: '20px',
+            borderRadius: '20px',
             zIndex: 1000,
-            borderTop: '1px solid rgba(255,255,255,0.1)',
-            boxShadow: '0 -2px 8px rgba(0,0,0,0.3)',
+            border: '1px solid rgba(255,255,255,0.1)',
+            boxShadow: '0 -4px 16px rgba(0,0,0,0.4)',
+            backdropFilter: 'blur(10px)',
           }}
         >
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', paddingBottom: '8px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
             <List style={{ margin: 0 }}>
               <ListInput
                 type="text"
