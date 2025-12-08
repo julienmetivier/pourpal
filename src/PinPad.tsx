@@ -112,6 +112,7 @@ const PinPad: React.FC<PinPadProps> = ({
             fill
             disabled={disabled || pin.length >= length}
             onClick={() => handleDigit(d)}
+            style={{ minHeight: '64px', paddingTop: '16px', paddingBottom: '16px' }}
           >
             {d}
           </Button>
@@ -119,7 +120,7 @@ const PinPad: React.FC<PinPadProps> = ({
 
         {/* Bottom row: Clear / 0 / Backspace (or Submit) */}
         {actions.clear ? (
-          <Button large outline disabled={disabled} onClick={handleClear}>
+          <Button large outline disabled={disabled} onClick={handleClear} style={{ minHeight: '64px', paddingTop: '16px', paddingBottom: '16px' }}>
             Clear
           </Button>
         ) : (
@@ -131,16 +132,17 @@ const PinPad: React.FC<PinPadProps> = ({
           fill
           disabled={disabled || pin.length >= length}
           onClick={() => handleDigit("0")}
+          style={{ minHeight: '64px', paddingTop: '16px', paddingBottom: '16px' }}
         >
           0
         </Button>
 
         {actions.submit ? (
-          <Button large color="green" disabled={disabled || pin.length !== length} onClick={() => onComplete?.(pin)}>
+          <Button large color="green" disabled={disabled || pin.length !== length} onClick={() => onComplete?.(pin)} style={{ minHeight: '64px', paddingTop: '16px', paddingBottom: '16px' }}>
             Submit
           </Button>
         ) : actions.backspace ? (
-          <Button large outline disabled={disabled || pin.length === 0} onClick={handleBackspace}>
+          <Button large outline disabled={disabled || pin.length === 0} onClick={handleBackspace} style={{ minHeight: '64px', paddingTop: '16px', paddingBottom: '16px' }}>
             ⌫
           </Button>
         ) : (

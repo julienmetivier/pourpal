@@ -8,7 +8,6 @@ import {
   NavTitle,
   NavRight,
   List,
-  ListInput,
   Toolbar,
   Button,
   Block,
@@ -101,17 +100,43 @@ const PourPal = () => {
           {!user && (
             <Block strong>
               <List>
-                <ListInput
-                  label="Employee"
-                  type="select"
-                  value={employeeId}
-                  onInput={(e) =>
-                    setEmployeeId((e.target as HTMLSelectElement).value)
-                  }
-                >
-                  <option value="guest">guest</option>
-                  <option value="julien">julien</option>
-                </ListInput>
+                <div style={{ marginBottom: '24px' }}>
+                  <div style={{ 
+                    display: 'flex', 
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    gap: '12px'
+                  }}>
+                    {['guest', 'julien'].map((employee) => {
+                      const isSelected = employeeId === employee;
+                      return (
+                        <Button
+                          key={employee}
+                          onClick={() => setEmployeeId(employee)}
+                          style={{
+                            padding: '12px 24px',
+                            borderRadius: '24px',
+                            border: isSelected 
+                              ? '2px solid #007aff' 
+                              : '2px solid rgba(255, 255, 255, 0.2)',
+                            backgroundColor: isSelected 
+                              ? 'rgba(0, 122, 255, 0.2)' 
+                              : 'rgba(255, 255, 255, 0.05)',
+                            color: isSelected ? '#007aff' : '#fff',
+                            fontSize: '16px',
+                            fontWeight: isSelected ? '600' : '400',
+                            cursor: 'pointer',
+                            transition: 'all 0.2s ease',
+                            textTransform: 'capitalize',
+                            outline: 'none',
+                          }}
+                        >
+                          {employee}
+                        </Button>
+                      );
+                    })}
+                  </div>
+                </div>
                 <PinPad
                   length={6}
                   value={password}
