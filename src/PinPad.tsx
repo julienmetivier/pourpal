@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useRef, useEffect } from "react";
 import { Block, Button, Icon } from "framework7-react";
 
 export type PinPadProps = {
@@ -41,22 +41,31 @@ const PinPad: React.FC<PinPadProps> = ({
 }) => {
   const [internal, setInternal] = useState(defaultValue);
   const pin = value !== undefined ? value : internal;
+  const pinRef = useRef(pin);
+  
+  // Keep ref in sync with pin value
+  useEffect(() => {
+    pinRef.current = pin;
+  }, [pin]);
 
   const update = (next: string) => {
     if (disabled) return;
+    pinRef.current = next;
     if (value === undefined) setInternal(next);
     onChange?.(next);
     if (onComplete && next.length === length) onComplete(next);
   };
 
   const handleDigit = (d: string) => {
-    if (pin.length >= length || disabled) return;
-    update(pin + d);
+    const currentPin = pinRef.current;
+    if (currentPin.length >= length || disabled) return;
+    update(currentPin + d);
   };
 
   const handleBackspace = () => {
-    if (pin.length === 0 || disabled) return;
-    update(pin.slice(0, -1));
+    const currentPin = pinRef.current;
+    if (currentPin.length === 0 || disabled) return;
+    update(currentPin.slice(0, -1));
   };
 
   const handleClear = () => update("");
@@ -138,7 +147,7 @@ const PinPad: React.FC<PinPadProps> = ({
         </Button>
 
         {actions.submit ? (
-          <Button large color="green" disabled={disabled || pin.length !== length} onClick={() => onComplete?.(pin)} style={{ minHeight: '64px', paddingTop: '16px', paddingBottom: '16px' }}>
+          <Button large color="green" disabled={disabled || pin.length !== length} onClick={() => onComplete?.(pinRef.current)} style={{ minHeight: '64px', paddingTop: '16px', paddingBottom: '16px' }}>
             Submit
           </Button>
         ) : actions.backspace ? (

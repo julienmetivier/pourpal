@@ -21,3 +21,9 @@ code {
 .item-inner {
   align-content: center;
 }
+
+/* iOS 12 compatibility - reset button appearance */
+.button {
+  -webkit-appearance: none;
+  appearance: none;
+}

@@ -104,10 +104,9 @@ const PourPal = () => {
                   <div style={{ 
                     display: 'flex', 
                     flexDirection: 'column',
-                    alignItems: 'center',
-                    gap: '12px'
+                    alignItems: 'center'
                   }}>
-                    {['guest', 'julien'].map((employee) => {
+                    {['guest', 'julien'].map((employee, index) => {
                       const isSelected = employeeId === employee;
                       return (
                         <Button
@@ -129,6 +128,9 @@ const PourPal = () => {
                             transition: 'all 0.2s ease',
                             textTransform: 'capitalize',
                             outline: 'none',
+                            marginTop: index > 0 ? '12px' : '0',
+                            width: 'auto',
+                            minWidth: '120px'
                           }}
                         >
                           {employee}
