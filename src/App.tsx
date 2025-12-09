@@ -23,7 +23,7 @@ import {
 import PinPad from "./PinPad";
 import Order from "./container/Order";
 import OrdersList from "./container/OrdersList";
-import AddDrink from "./container/AddDrink";
+import Admin from "./container/Admin";
 import app from "./firebaseConfig";
 
 const auth = getAuth(app);
@@ -190,7 +190,7 @@ const PourPal = () => {
                   <OrdersList />
                 )}
                 {activeTab === "tab-3" && employeeId === "julien" && (
-                  <AddDrink />
+                  <Admin />
                 )}
               </div>
               <Toolbar bottom tabbar style={{ 
@@ -228,7 +228,7 @@ const PourPal = () => {
                       fontWeight: activeTab === "tab-3" ? 'bold' : 'normal'
                     }}
                   >
-                    Drinks
+                    Drinks/Admin
                   </Link>
                 )}
               </Toolbar>

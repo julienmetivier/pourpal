@@ -1,7 +1,7 @@
 // Order.tsx
 import { useState, useEffect } from "react";
 import { Block, List, ListInput, Button } from "framework7-react";
-import { getFirestore, collection, addDoc } from "firebase/firestore";
+import { getFirestore, collection, addDoc, doc, onSnapshot } from "firebase/firestore";
 import DrinksList from "./DrinksList";
 import app from "../firebaseConfig";
 
@@ -15,6 +15,7 @@ type OrderProps = {
 const Order: React.FC<OrderProps> = ({ employeeId, user }) => {
   const [drink, setDrink] = useState("");
   const [clientName, setClientName] = useState("");
+  const [barOpen, setBarOpen] = useState(false);
   const [notification, setNotification] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
 
   useEffect(() => {
@@ -26,9 +27,40 @@ const Order: React.FC<OrderProps> = ({ employeeId, user }) => {
     }
   }, [notification]);
 
+  // Listen for bar status
+  useEffect(() => {
+    const settingsRef = doc(db, "settings", "julien_bar");
+    
+    const unsubscribe = onSnapshot(
+      settingsRef,
+      (snapshot) => {
+        if (snapshot.exists()) {
+          const data = snapshot.data();
+          setBarOpen(data?.isBarOpen === true);
+        } else {
+          setBarOpen(false);
+        }
+      },
+      (error) => {
+        console.error("Error listening to bar status:", error);
+        setBarOpen(false);
+      }
+    );
+
+    return () => unsubscribe();
+  }, []);
+
   const sendOrder = async () => {
     if (!user) {
       alert("You must be logged in to place an order.");
+      return;
+    }
+
+    if (!barOpen) {
+      setNotification({
+        message: '❌ Bar is currently closed. Orders cannot be placed.',
+        type: 'error'
+      });
       return;
     }
 
@@ -91,6 +123,21 @@ const Order: React.FC<OrderProps> = ({ employeeId, user }) => {
             New Order
           </h2>
           
+          {!barOpen && (
+            <div style={{
+              padding: '16px',
+              marginBottom: '20px',
+              borderRadius: '12px',
+              backgroundColor: 'rgba(244, 67, 54, 0.2)',
+              border: '1px solid rgba(244, 67, 54, 0.3)',
+              color: '#f44336',
+              textAlign: 'center',
+              fontWeight: '600'
+            }}>
+              ⚠️ Bar is currently closed. Orders cannot be placed.
+            </div>
+          )}
+          
           <div style={{ marginBottom: "24px" }}>
             <DrinksList
               selectedDrink={drink}
@@ -136,7 +183,7 @@ const Order: React.FC<OrderProps> = ({ employeeId, user }) => {
             <Button
               fill
               color="green"
-              disabled={!drink || !clientName}
+              disabled={!drink || !clientName || !barOpen}
               onClick={sendOrder}
               style={{ fontSize: "16px", fontWeight: "600", padding: "14px", margin: 0 }}
             >

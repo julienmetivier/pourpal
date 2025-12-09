@@ -13,7 +13,15 @@ service cloud.firestore {
     match /orders/{orderId} {
       allow read: if true; // Allow reading orders for bartender view
       allow create: if true; // Allow creating orders from client
-      allow update, delete: if false; // Only backend can update
+      allow update: if true; // Allow updating orders (for admin to reject, backend to mark as done)
+      allow delete: if false; // Prevent deletion of orders
+    }
+    
+    // Allow read and write access to settings collection
+    match /settings/{settingId} {
+      allow read: if true; // Allow reading settings (e.g., bar status)
+      allow create, update: if true; // Allow updating settings (for admin)
+      allow delete: if false; // Prevent deletion of settings
     }
   }
 }
