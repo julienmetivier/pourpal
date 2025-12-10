@@ -28,7 +28,14 @@ const DrinksList: React.FC<DrinksListProps> = ({ selectedDrink, onChange }) => {
         id: doc.id,
         ...doc.data(),
       })) as Drink[];
-      setDrinks(drinkList);
+      
+      // Sort drinks: available first, unavailable last
+      const sortedDrinks = drinkList.sort((a, b) => {
+        if (a.available === b.available) return 0;
+        return a.available ? -1 : 1;
+      });
+      
+      setDrinks(sortedDrinks);
     };
 
     fetchDrinks();
