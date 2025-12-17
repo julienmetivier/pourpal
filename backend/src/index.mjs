@@ -47,15 +47,8 @@ const db = admin.firestore();
 // - Setting up udev rules for the printer
 // On macOS, USB access should work without special permissions
 let printerDeviceInfo = null;
-let printerInitialized = false;
 
-const initializePrinter = () => {
-  if (printerInitialized) {
-    return printerDeviceInfo; // Already initialized
-  }
-
-  printerInitialized = true;
-
+const initializePrinter = (force = false) => {
   try {
     console.log("🔍 Searching for USB printers...");
     const devices = escpos.USB.findPrinter();
@@ -64,10 +57,12 @@ const initializePrinter = () => {
     if (devices && devices.length > 0) {
       printerDeviceInfo = devices[0];
       console.log("🖨️ Printer device found:", JSON.stringify(devices[0], null, 2));
+      console.log("✅ printerDeviceInfo set to:", printerDeviceInfo ? "available" : "null");
     } else {
       console.warn("⚠️ No USB printer found. Printing will be skipped.");
       console.warn("   On Linux/Raspbian, ensure USB permissions are set correctly.");
       printerDeviceInfo = null;
+      console.log("✅ printerDeviceInfo set to: null (no printer found)");
     }
   } catch (error) {
     console.error("❌ Failed to find printer:", error);
@@ -79,22 +74,139 @@ const initializePrinter = () => {
       console.error("   - Adding user to dialout group: sudo usermod -a -G dialout $USER");
     }
     printerDeviceInfo = null;
+    console.log("✅ printerDeviceInfo set to: null (error occurred)");
   }
   
   return printerDeviceInfo;
 };
 
+// Function to process pending orders
+const processPendingOrders = async () => {
+  if (!printerDeviceInfo) {
+    console.log('⚠️ No printer available, skipping pending orders check');
+    return;
+  }
+
+  try {
+    console.log('🔍 Checking for pending orders...');
+    const pendingOrdersSnapshot = await db.collection("orders")
+      .where("status", "==", "pending")
+      .get();
+
+    if (pendingOrdersSnapshot.empty) {
+      console.log('✅ No pending orders found');
+      return;
+    }
+
+    console.log(`📋 Found ${pendingOrdersSnapshot.size} pending order(s) to process`);
+
+    for (const docSnapshot of pendingOrdersSnapshot.docs) {
+      const order = docSnapshot.data();
+      const orderId = docSnapshot.id;
+
+      console.log(`🖨️ Processing pending order ${orderId}: ${order.drink} for ${order.clientName}`);
+
+      try {
+        // Print order
+        await printOrder(order.drink, order.clientName);
+        console.log(`✅ Printed pending order ${orderId}: ${order.drink} for ${order.clientName}`);
+
+        // Update order status after successful printing
+        await db.collection("orders").doc(orderId).update({
+          status: "done",
+          processedAt: Date.now(),
+        });
+
+        console.log(`✅ Order ${orderId} marked as done.`);
+      } catch (err) {
+        console.error(`❌ Failed to print pending order ${orderId}:`, err);
+        // Keep order as pending if printing failed - it will be retried later
+      }
+    }
+  } catch (error) {
+    console.error('❌ Error processing pending orders:', error);
+  }
+};
+
 // Initialize printer on startup
 initializePrinter();
+
+// Process any pending orders on startup if printer is available
+if (printerDeviceInfo) {
+  console.log('🖨️ Printer available on startup. Checking for pending orders...');
+  processPendingOrders();
+}
+
+// Set up USB hotplug listeners
+// Use the patched usb module which has EventEmitter methods bound
+const usb = usbModule.usb || usbModule;
+
+if (typeof usb.on === 'function') {
+  // Listen for new USB devices being attached
+  usb.on('attach', (device) => {
+    console.log('🔌 USB device attached:', {
+      vendorId: device.deviceDescriptor?.idVendor || 'unknown',
+      productId: device.deviceDescriptor?.idProduct || 'unknown',
+    });
+    
+    // Wait a moment for the device to be fully initialized, then re-check for printers
+    setTimeout(async () => {
+      console.log('🔄 Re-initializing printer after device attach...');
+      const wasPrinterAvailable = printerDeviceInfo !== null;
+      console.log(`📊 Printer state before re-init: ${wasPrinterAvailable ? 'available' : 'not available'}`);
+      
+      // Re-initialize printer
+      const printerFound = initializePrinter(true);
+      
+      console.log(`📊 Printer state after re-init: ${printerDeviceInfo ? 'available' : 'not available'}`);
+      console.log(`📊 initializePrinter returned: ${printerFound ? 'printer found' : 'no printer'}`);
+      
+      // If printer is now available, check for pending orders
+      // This handles both cases: printer was disconnected and reconnected, or printer is newly connected
+      if (printerDeviceInfo) {
+        if (!wasPrinterAvailable) {
+          console.log('🖨️ Printer connected! Checking for unprinted orders...');
+        } else {
+          console.log('🖨️ Printer re-initialized. Checking for unprinted orders...');
+        }
+        await processPendingOrders();
+      } else {
+        console.log('⚠️ No printer found after device attach');
+        console.log('   This USB device may not be a compatible thermal printer');
+      }
+    }, 1000);
+  });
+
+  // Listen for USB devices being detached
+  usb.on('detach', (device) => {
+    console.log('🔌 USB device detached:', {
+      vendorId: device.deviceDescriptor?.idVendor || 'unknown',
+      productId: device.deviceDescriptor?.idProduct || 'unknown',
+    });
+    
+    // If we had a printer and a device was just disconnected, mark printer as unavailable
+    // We'll re-check on the next print attempt or when a new device is attached
+    if (printerDeviceInfo) {
+      console.log('⚠️ USB device disconnected. Printer may be unavailable.');
+      // Don't immediately clear printerDeviceInfo - wait to see if it's actually the printer
+      // The next print attempt will re-check
+    }
+  });
+  
+  console.log('✅ USB hotplug listeners initialized');
+} else {
+  console.warn('⚠️ USB hotplug not available - EventEmitter methods not found');
+  console.warn('   Hotplug detection may not work. Printer will need to be connected at startup.');
+}
 
 // Function to print order
 // Returns true if printing succeeded, false if no printer available, throws error if printing failed
 const printOrder = (drink, clientName) => {
   return new Promise((resolve, reject) => {
-    // Try to re-initialize printer if not found initially (in case it was plugged in later)
+    // Try to re-initialize printer if not found (in case it was plugged in later)
     if (!printerDeviceInfo) {
       console.log("🔄 Re-checking for printer...");
-      initializePrinter();
+      initializePrinter(true);
     }
     
     // Create device instance when needed (lazy initialization)
