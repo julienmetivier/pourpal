@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react";
 import { Block, List, ListItem, ListInput, Button, Badge } from "framework7-react";
 import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, onSnapshot, updateDoc } from "firebase/firestore";
+import Notification from "../components/Notification";
 import app from "../firebaseConfig";
 
 const db = getFirestore(app);
@@ -151,25 +152,7 @@ const AddDrink: React.FC = () => {
   return (
     <>
       {notification && (
-        <div
-          style={{
-            position: 'fixed',
-            top: '50%',
-            left: '50%',
-            transform: 'translate(-50%, -50%)',
-            backgroundColor: notification.type === 'success' ? '#4CAF50' : '#f44336',
-            color: 'white',
-            padding: '16px 24px',
-            borderRadius: '8px',
-            zIndex: 10000,
-            boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
-            fontSize: '16px',
-            textAlign: 'center',
-            minWidth: '250px',
-          }}
-        >
-          {notification.message}
-        </div>
+        <Notification message={notification.message} type={notification.type} />
       )}
       <Block strong>
         <h2 style={{ marginTop: 0, marginBottom: "16px" }}>Add New Drink</h2>
