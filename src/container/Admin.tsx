@@ -45,9 +45,10 @@ const Admin: React.FC = () => {
   const [icon, setIcon] = useState("beer-bottle");
   const [category, setCategory] = useState(categories[0]);
   const [selectedIngredients, setSelectedIngredients] = useState<string[]>([]);
+  const [newIngredientName, setNewIngredientName] = useState("");
   const [drinks, setDrinks] = useState<Drink[]>([]);
   const [ingredients, setIngredients] = useState<Ingredient[]>([]);
-  const [ingredientName, setIngredientName] = useState("");
+  const [ingredientSearch, setIngredientSearch] = useState("");
   const [barOpen, setBarOpen] = useState(false);
   const [notification, setNotification] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -208,6 +209,61 @@ const Admin: React.FC = () => {
     });
   };
 
+  const handleAddNewIngredientToDrink = async () => {
+    if (!newIngredientName.trim()) {
+      setNotification({
+        message: '❌ Please enter an ingredient name',
+        type: 'error'
+      });
+      return;
+    }
+
+    const ingredientNameToAdd = newIngredientName.trim();
+    const capitalizedName = ingredientNameToAdd.charAt(0).toUpperCase() + ingredientNameToAdd.slice(1);
+
+    // Check if ingredient already exists
+    const existingIngredient = ingredients.find(
+      ing => ing.name.toLowerCase() === ingredientNameToAdd.toLowerCase()
+    );
+
+    if (existingIngredient) {
+      // If it exists, just add it to selected ingredients if not already selected
+      if (!selectedIngredients.includes(existingIngredient.id)) {
+        setSelectedIngredients([...selectedIngredients, existingIngredient.id]);
+      }
+      setNewIngredientName("");
+      setNotification({
+        message: `✅ Ingredient "${capitalizedName}" already exists and has been added to the drink.`,
+        type: 'success'
+      });
+      return;
+    }
+
+    try {
+      // Create new ingredient
+      const ingredientRef = await addDoc(collection(db, "ingredients"), {
+        name: ingredientNameToAdd.toLowerCase(),
+        available: true,
+        createdAt: Date.now(),
+      });
+
+      // Add it to selected ingredients
+      setSelectedIngredients([...selectedIngredients, ingredientRef.id]);
+      setNewIngredientName("");
+
+      setNotification({
+        message: `✅ Ingredient "${capitalizedName}" created and added to drink!`,
+        type: 'success'
+      });
+    } catch (error) {
+      setNotification({
+        message: '❌ Failed to create ingredient. Please try again.',
+        type: 'error'
+      });
+      console.error("Error creating ingredient:", error);
+    }
+  };
+
   const handleSubmit = async () => {
     if (!drinkName.trim()) {
       setNotification({
@@ -241,6 +297,7 @@ const Admin: React.FC = () => {
       setIcon("beer-bottle");
       setCategory(categories[0]);
       setSelectedIngredients([]);
+      setNewIngredientName("");
     } catch (error) {
       setNotification({
         message: '❌ Failed to add drink. Please try again.',
@@ -250,36 +307,6 @@ const Admin: React.FC = () => {
     }
   };
 
-  const handleAddIngredient = async () => {
-    if (!ingredientName.trim()) {
-      setNotification({
-        message: '❌ Please enter an ingredient name',
-        type: 'error'
-      });
-      return;
-    }
-
-    try {
-      await addDoc(collection(db, "ingredients"), {
-        name: ingredientName.trim(),
-        available: true,
-        createdAt: Date.now(),
-      });
-
-      setNotification({
-        message: `✅ Ingredient "${ingredientName}" added successfully!`,
-        type: 'success'
-      });
-
-      setIngredientName("");
-    } catch (error) {
-      setNotification({
-        message: '❌ Failed to add ingredient. Please try again.',
-        type: 'error'
-      });
-      console.error("Error adding ingredient:", error);
-    }
-  };
 
   const handleToggleIngredientAvailability = async (ingredientId: string, ingredientName: string, currentAvailability: boolean) => {
     // Find all cocktails that use this ingredient
@@ -559,45 +586,122 @@ const Admin: React.FC = () => {
                 color: "#aaa",
                 fontWeight: "500"
               }}>
-                Ingredients (select all that apply):
+                Ingredients:
               </label>
-              {ingredients.length === 0 ? (
-                <p style={{ color: "#666", fontSize: "14px", fontStyle: "italic" }}>
-                  No ingredients available. Add ingredients below first.
-                </p>
-              ) : (
-                <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-                  {ingredients.map((ingredient) => (
-                    <label
-                      key={ingredient.id}
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        padding: "12px",
-                        borderRadius: "8px",
-                        backgroundColor: "rgba(255, 255, 255, 0.03)",
-                        border: "1px solid rgba(255, 255, 255, 0.1)",
-                        cursor: "pointer",
-                      }}
-                    >
-                      <input
-                        type="checkbox"
-                        checked={selectedIngredients.includes(ingredient.id)}
-                        onChange={(e) => {
-                          if (e.target.checked) {
-                            setSelectedIngredients([...selectedIngredients, ingredient.id]);
-                          } else {
-                            setSelectedIngredients(selectedIngredients.filter(id => id !== ingredient.id));
-                          }
+              
+              {/* Existing Ingredients List */}
+              {ingredients.length > 0 && (
+                <div style={{ marginBottom: "16px" }}>
+                  <p style={{ 
+                    marginBottom: "8px", 
+                    fontSize: "13px", 
+                    color: "#888",
+                    fontWeight: "400"
+                  }}>
+                    Select from existing ingredients:
+                  </p>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                    {ingredients.map((ingredient) => (
+                      <label
+                        key={ingredient.id}
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          padding: "12px",
+                          borderRadius: "8px",
+                          backgroundColor: "rgba(255, 255, 255, 0.03)",
+                          border: "1px solid rgba(255, 255, 255, 0.1)",
+                          cursor: "pointer",
                         }}
-                        style={{ marginRight: "12px", width: "18px", height: "18px" }}
-                      />
-                      <span style={{ flex: 1 }}>{ingredient.name.charAt(0).toUpperCase() + ingredient.name.slice(1)}</span>
-                      <Badge color={ingredient.available ? "green" : "red"} style={{ fontSize: "12px" }}>
-                        {ingredient.available ? "Available" : "Out"}
-                      </Badge>
-                    </label>
-                  ))}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={selectedIngredients.includes(ingredient.id)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setSelectedIngredients([...selectedIngredients, ingredient.id]);
+                            } else {
+                              setSelectedIngredients(selectedIngredients.filter(id => id !== ingredient.id));
+                            }
+                          }}
+                          style={{ marginRight: "12px", width: "18px", height: "18px" }}
+                        />
+                        <span style={{ flex: 1 }}>{ingredient.name.charAt(0).toUpperCase() + ingredient.name.slice(1)}</span>
+                        <Badge color={ingredient.available ? "green" : "red"} style={{ fontSize: "12px" }}>
+                          {ingredient.available ? "Available" : "Out"}
+                        </Badge>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Add New Ingredient */}
+              <div style={{
+                padding: "12px",
+                borderRadius: "8px",
+                backgroundColor: "rgba(0, 122, 255, 0.05)",
+                border: "1px solid rgba(0, 122, 255, 0.2)",
+              }}>
+                <p style={{ 
+                  marginBottom: "8px", 
+                  fontSize: "13px", 
+                  color: "#aaa",
+                  fontWeight: "400"
+                }}>
+                  Or add a new ingredient:
+                </p>
+                <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+                  <input
+                    type="text"
+                    placeholder="Enter new ingredient name"
+                    value={newIngredientName}
+                    onChange={(e) => setNewIngredientName(e.target.value)}
+                    onKeyPress={(e) => {
+                      if (e.key === 'Enter' && newIngredientName.trim()) {
+                        handleAddNewIngredientToDrink();
+                      }
+                    }}
+                    style={{
+                      flex: 1,
+                      padding: "10px 12px",
+                      borderRadius: "8px",
+                      border: "1px solid rgba(255, 255, 255, 0.2)",
+                      backgroundColor: "rgba(255, 255, 255, 0.05)",
+                      color: "#fff",
+                      fontSize: "14px",
+                      outline: "none",
+                    }}
+                  />
+                  <Button
+                    small
+                    fill
+                    color="blue"
+                    disabled={!newIngredientName.trim()}
+                    onClick={handleAddNewIngredientToDrink}
+                    style={{ minWidth: "80px" }}
+                  >
+                    Add
+                  </Button>
+                </div>
+              </div>
+
+              {/* Selected Ingredients Summary */}
+              {selectedIngredients.length > 0 && (
+                <div style={{ marginTop: "16px", padding: "12px", borderRadius: "8px", backgroundColor: "rgba(76, 175, 80, 0.1)", border: "1px solid rgba(76, 175, 80, 0.2)" }}>
+                  <p style={{ margin: "0 0 8px 0", fontSize: "13px", fontWeight: "500", color: "#4CAF50" }}>
+                    Selected ingredients ({selectedIngredients.length}):
+                  </p>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
+                    {selectedIngredients.map((ingredientId) => {
+                      const ingredient = ingredients.find(ing => ing.id === ingredientId);
+                      return ingredient ? (
+                        <Badge key={ingredientId} color="green" style={{ fontSize: "12px", padding: "4px 8px" }}>
+                          {ingredient.name.charAt(0).toUpperCase() + ingredient.name.slice(1)}
+                        </Badge>
+                      ) : null;
+                    })}
+                  </div>
                 </div>
               )}
             </div>
@@ -708,96 +812,101 @@ const Admin: React.FC = () => {
       <Block strong style={{ marginTop: "24px" }}>
         <h2 style={{ marginTop: 0, marginBottom: "16px" }}>Manage Ingredients</h2>
         
-        {/* Add Ingredient Form */}
-        <div style={{ marginBottom: "24px" }}>
+        {/* Search Field */}
+        <div style={{ marginBottom: "20px" }}>
           <List>
             <ListInput
-              label="Ingredient Name"
+              label="Search Ingredients"
               type="text"
-              placeholder="Enter ingredient name (e.g., tequila)"
-              value={ingredientName}
-              onInput={(e) => setIngredientName((e.target as HTMLInputElement).value)}
+              placeholder="Search by name..."
+              value={ingredientSearch}
+              onInput={(e) => setIngredientSearch((e.target as HTMLInputElement).value)}
             />
           </List>
-          <Button
-            fill
-            color="blue"
-            disabled={!ingredientName.trim()}
-            onClick={handleAddIngredient}
-            style={{ marginTop: "16px" }}
-          >
-            Add Ingredient
-          </Button>
         </div>
 
         {/* Ingredients List */}
-        {ingredients.length > 0 ? (
-          <List style={{ listStyle: 'none', padding: 0 }}>
-            {ingredients.map((ingredient) => (
-              <div key={ingredient.id} style={{ marginBottom: "12px" }}>
-                <ListItem
-                  title={ingredient.name.charAt(0).toUpperCase() + ingredient.name.slice(1)}
-                  style={{
-                    borderRadius: "12px",
-                    marginBottom: 0,
-                    border: "1px solid rgba(255, 255, 255, 0.15)",
-                    backgroundColor: "rgba(255, 255, 255, 0.03)",
-                    padding: "16px",
-                  }}
-                >
-                  <div slot="after" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                    <Badge color={ingredient.available ? 'green' : 'red'} style={{ fontSize: '14px', padding: '6px 12px' }}>
-                      {ingredient.available ? 'Available' : 'Out'}
-                    </Badge>
-                    <div
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        e.preventDefault();
-                        handleToggleIngredientAvailability(ingredient.id, ingredient.name, ingredient.available);
-                      }}
-                      onMouseDown={(e) => {
-                        e.stopPropagation();
-                        e.preventDefault();
-                      }}
-                      style={{
-                        width: '50px',
-                        height: '28px',
-                        borderRadius: '14px',
-                        backgroundColor: ingredient.available ? '#4CAF50' : '#666',
-                        position: 'relative',
-                        cursor: 'pointer',
-                        transition: 'background-color 0.3s ease',
-                        padding: '2px',
-                        boxSizing: 'border-box',
-                        flexShrink: 0,
-                        userSelect: 'none',
-                        WebkitTapHighlightColor: 'transparent',
-                      }}
-                    >
+        {(() => {
+          const filteredIngredients = ingredients.filter(ingredient =>
+            ingredient.name.toLowerCase().includes(ingredientSearch.toLowerCase())
+          );
+
+          if (filteredIngredients.length === 0) {
+            return (
+              <Block style={{ textAlign: "center", padding: "40px 20px", color: "#666" }}>
+                <p>
+                  {ingredientSearch 
+                    ? `No ingredients found matching "${ingredientSearch}"`
+                    : "No ingredients yet. Add ingredients when creating cocktails!"}
+                </p>
+              </Block>
+            );
+          }
+
+          return (
+            <List style={{ listStyle: 'none', padding: 0 }}>
+              {filteredIngredients.map((ingredient) => (
+                <div key={ingredient.id} style={{ marginBottom: "12px" }}>
+                  <ListItem
+                    title={ingredient.name.charAt(0).toUpperCase() + ingredient.name.slice(1)}
+                    style={{
+                      borderRadius: "12px",
+                      marginBottom: 0,
+                      border: "1px solid rgba(255, 255, 255, 0.15)",
+                      backgroundColor: "rgba(255, 255, 255, 0.03)",
+                      padding: "16px",
+                    }}
+                  >
+                    <div slot="after" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                      <Badge color={ingredient.available ? 'green' : 'red'} style={{ fontSize: '14px', padding: '6px 12px' }}>
+                        {ingredient.available ? 'Available' : 'Out'}
+                      </Badge>
                       <div
-                        style={{
-                          width: '24px',
-                          height: '24px',
-                          borderRadius: '50%',
-                          backgroundColor: '#fff',
-                          position: 'absolute',
-                          top: '2px',
-                          left: ingredient.available ? '24px' : '2px',
-                          transition: 'left 0.3s ease',
-                          boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          e.preventDefault();
+                          handleToggleIngredientAvailability(ingredient.id, ingredient.name, ingredient.available);
                         }}
-                      />
+                        onMouseDown={(e) => {
+                          e.stopPropagation();
+                          e.preventDefault();
+                        }}
+                        style={{
+                          width: '50px',
+                          height: '28px',
+                          borderRadius: '14px',
+                          backgroundColor: ingredient.available ? '#4CAF50' : '#666',
+                          position: 'relative',
+                          cursor: 'pointer',
+                          transition: 'background-color 0.3s ease',
+                          padding: '2px',
+                          boxSizing: 'border-box',
+                          flexShrink: 0,
+                          userSelect: 'none',
+                          WebkitTapHighlightColor: 'transparent',
+                        }}
+                      >
+                        <div
+                          style={{
+                            width: '24px',
+                            height: '24px',
+                            borderRadius: '50%',
+                            backgroundColor: '#fff',
+                            position: 'absolute',
+                            top: '2px',
+                            left: ingredient.available ? '24px' : '2px',
+                            transition: 'left 0.3s ease',
+                            boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
+                          }}
+                        />
+                      </div>
                     </div>
-                  </div>
-                </ListItem>
-              </div>
-            ))}
-          </List>
-        ) : (
-          <Block style={{ textAlign: "center", padding: "40px 20px", color: "#666" }}>
-            <p>No ingredients yet. Add your first ingredient above!</p>
-          </Block>
-        )}
+                  </ListItem>
+                </div>
+              ))}
+            </List>
+          );
+        })()}
       </Block>
 
       {/* Confirmation Dialog for Admin Actions */}
