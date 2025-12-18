@@ -49,6 +49,7 @@ const Admin: React.FC = () => {
   const [drinks, setDrinks] = useState<Drink[]>([]);
   const [ingredients, setIngredients] = useState<Ingredient[]>([]);
   const [ingredientSearch, setIngredientSearch] = useState("");
+  const [adminTab, setAdminTab] = useState<'drinks' | 'ingredients'>('drinks');
   const [barOpen, setBarOpen] = useState(false);
   const [notification, setNotification] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -531,9 +532,44 @@ const Admin: React.FC = () => {
         </div>
       </Block>
 
-      {/* Add Drink Section */}
-      <Block strong style={{ marginTop: "24px" }}>
-        <h2 style={{ marginTop: 0, marginBottom: "16px" }}>Add New Drink</h2>
+      {/* Tabs */}
+      <Block strong style={{ marginTop: "24px", padding: "12px" }}>
+        <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
+          <Button
+            fill={adminTab === 'drinks'}
+            outline={adminTab !== 'drinks'}
+            onClick={() => setAdminTab('drinks')}
+            style={{
+              borderRadius: '16px',
+              padding: '10px 24px',
+              fontSize: '16px',
+              fontWeight: adminTab === 'drinks' ? '600' : '400',
+            }}
+          >
+            Drinks
+          </Button>
+          <Button
+            fill={adminTab === 'ingredients'}
+            outline={adminTab !== 'ingredients'}
+            onClick={() => setAdminTab('ingredients')}
+            style={{
+              borderRadius: '16px',
+              padding: '10px 24px',
+              fontSize: '16px',
+              fontWeight: adminTab === 'ingredients' ? '600' : '400',
+            }}
+          >
+            Ingredients
+          </Button>
+        </div>
+      </Block>
+
+      {/* Drinks Tab Content */}
+      {adminTab === 'drinks' && (
+        <>
+          {/* Add Drink Section */}
+          <Block strong style={{ marginTop: "24px" }}>
+            <h2 style={{ marginTop: 0, marginBottom: "16px" }}>Add New Drink</h2>
         
         <List>
           <ListInput
@@ -719,96 +755,101 @@ const Admin: React.FC = () => {
         </Button>
       </Block>
 
-      {/* Existing Drinks List */}
-      <Block strong style={{ marginTop: "24px" }}>
-        <h2 style={{ marginTop: 0, marginBottom: "16px" }}>Existing Drinks</h2>
-        
-        {drinks.length > 0 ? (
-          <List style={{ listStyle: 'none', padding: 0 }}>
-            {drinks.map((drink) => (
-              <div key={drink.id} style={{ marginBottom: "16px" }}>
-                <ListItem
-                  title={drink.name}
-                  subtitle={`${drink.category.charAt(0).toUpperCase() + drink.category.slice(1)} - ${drink.available ? 'Available' : 'Unavailable'}`}
-                  style={{
-                    borderRadius: "12px",
-                    marginBottom: 0,
-                    border: "1px solid rgba(255, 255, 255, 0.15)",
-                    backgroundColor: "rgba(255, 255, 255, 0.03)",
-                    padding: "16px",
-                  }}
-                >
-                <div slot="media" style={{ fontSize: 24 }}>
-                  {getIcon(drink.icon)}
-                </div>
-                <div slot="after" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '4px' }}>
-                    <span style={{ fontSize: '12px', color: drink.available ? '#4CAF50' : '#999' }}>
-                      {drink.available ? 'Available' : 'Unavailable'}
-                    </span>
-                    <div
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        e.preventDefault();
-                        handleToggleAvailability(drink.id, drink.available);
-                      }}
-                      onMouseDown={(e) => {
-                        e.stopPropagation();
-                        e.preventDefault();
-                      }}
+          {/* Existing Drinks List */}
+          <Block strong style={{ marginTop: "24px" }}>
+            <h2 style={{ marginTop: 0, marginBottom: "16px" }}>Existing Drinks</h2>
+            
+            {drinks.length > 0 ? (
+              <List style={{ listStyle: 'none', padding: 0 }}>
+                {drinks.map((drink) => (
+                  <div key={drink.id} style={{ marginBottom: "16px" }}>
+                    <ListItem
+                      title={drink.name}
+                      subtitle={`${drink.category.charAt(0).toUpperCase() + drink.category.slice(1)} - ${drink.available ? 'Available' : 'Unavailable'}`}
                       style={{
-                        width: '50px',
-                        height: '28px',
-                        borderRadius: '14px',
-                        backgroundColor: drink.available ? '#4CAF50' : '#666',
-                        position: 'relative',
-                        cursor: 'pointer',
-                        transition: 'background-color 0.3s ease',
-                        padding: '2px',
-                        boxSizing: 'border-box',
-                        flexShrink: 0,
-                        userSelect: 'none',
-                        WebkitTapHighlightColor: 'transparent',
+                        borderRadius: "12px",
+                        marginBottom: 0,
+                        border: "1px solid rgba(255, 255, 255, 0.15)",
+                        backgroundColor: "rgba(255, 255, 255, 0.03)",
+                        padding: "16px",
                       }}
                     >
-                      <div
-                        style={{
-                          width: '24px',
-                          height: '24px',
-                          borderRadius: '50%',
-                          backgroundColor: '#fff',
-                          position: 'absolute',
-                          top: '2px',
-                          left: drink.available ? '24px' : '2px',
-                          transition: 'left 0.3s ease',
-                          boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
-                        }}
-                      />
+                    <div slot="media" style={{ fontSize: 24 }}>
+                      {getIcon(drink.icon)}
                     </div>
+                    <div slot="after" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '4px' }}>
+                        <span style={{ fontSize: '12px', color: drink.available ? '#4CAF50' : '#999' }}>
+                          {drink.available ? 'Available' : 'Unavailable'}
+                        </span>
+                        <div
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            e.preventDefault();
+                            handleToggleAvailability(drink.id, drink.available);
+                          }}
+                          onMouseDown={(e) => {
+                            e.stopPropagation();
+                            e.preventDefault();
+                          }}
+                          style={{
+                            width: '50px',
+                            height: '28px',
+                            borderRadius: '14px',
+                            backgroundColor: drink.available ? '#4CAF50' : '#666',
+                            position: 'relative',
+                            cursor: 'pointer',
+                            transition: 'background-color 0.3s ease',
+                            padding: '2px',
+                            boxSizing: 'border-box',
+                            flexShrink: 0,
+                            userSelect: 'none',
+                            WebkitTapHighlightColor: 'transparent',
+                          }}
+                        >
+                          <div
+                            style={{
+                              width: '24px',
+                              height: '24px',
+                              borderRadius: '50%',
+                              backgroundColor: '#fff',
+                              position: 'absolute',
+                              top: '2px',
+                              left: drink.available ? '24px' : '2px',
+                              transition: 'left 0.3s ease',
+                              boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
+                            }}
+                          />
+                        </div>
+                      </div>
+                      <Button
+                        small
+                        color="red"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeleteClick(drink.id, drink.name);
+                        }}
+                      >
+                        Delete
+                      </Button>
+                    </div>
+                  </ListItem>
                   </div>
-                  <Button
-                    small
-                    color="red"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleDeleteClick(drink.id, drink.name);
-                    }}
-                  >
-                    Delete
-                  </Button>
-                </div>
-              </ListItem>
-              </div>
-            ))}
-          </List>
-        ) : (
-          <Block style={{ textAlign: "center", padding: "40px 20px", color: "#666" }}>
-            <p>No drinks yet. Add your first drink above!</p>
+                ))}
+              </List>
+            ) : (
+              <Block style={{ textAlign: "center", padding: "40px 20px", color: "#666" }}>
+                <p>No drinks yet. Add your first drink above!</p>
+              </Block>
+            )}
           </Block>
-        )}
-      </Block>
+        </>
+      )}
 
-      {/* Ingredients Management Section */}
+      {/* Ingredients Tab Content */}
+      {adminTab === 'ingredients' && (
+        <>
+          {/* Ingredients Management Section */}
       <Block strong style={{ marginTop: "24px" }}>
         <h2 style={{ marginTop: 0, marginBottom: "16px" }}>Manage Ingredients</h2>
         
@@ -907,7 +948,9 @@ const Admin: React.FC = () => {
             </List>
           );
         })()}
-      </Block>
+        </Block>
+      </>
+      )}
 
       {/* Confirmation Dialog for Admin Actions */}
       {confirmDialog.type && (
