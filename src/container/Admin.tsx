@@ -31,20 +31,31 @@ type Drink = {
   icon: string;
   category: string;
   available: boolean;
+  ingredients?: string[]; // Array of ingredient document IDs
+};
+
+type Ingredient = {
+  id: string;
+  name: string;
+  available: boolean;
 };
 
 const Admin: React.FC = () => {
   const [drinkName, setDrinkName] = useState("");
   const [icon, setIcon] = useState("beer-bottle");
   const [category, setCategory] = useState(categories[0]);
+  const [selectedIngredients, setSelectedIngredients] = useState<string[]>([]);
   const [drinks, setDrinks] = useState<Drink[]>([]);
+  const [ingredients, setIngredients] = useState<Ingredient[]>([]);
+  const [ingredientName, setIngredientName] = useState("");
   const [barOpen, setBarOpen] = useState(false);
   const [notification, setNotification] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [drinkToDelete, setDrinkToDelete] = useState<{ id: string; name: string } | null>(null);
   const [confirmDialog, setConfirmDialog] = useState<{ 
-    type: 'toggleBar' | 'rejectOrders' | null;
+    type: 'toggleBar' | 'rejectOrders' | 'toggleIngredient' | null;
     message: string;
+    data?: any;
   }>({ type: null, message: '' });
 
   useEffect(() => {
@@ -87,6 +98,19 @@ const Admin: React.FC = () => {
         ...doc.data(),
       })) as Drink[];
       setDrinks(drinksList);
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  // Listen for ingredients
+  useEffect(() => {
+    const unsubscribe = onSnapshot(collection(db, "ingredients"), (snapshot) => {
+      const ingredientsList: Ingredient[] = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      })) as Ingredient[];
+      setIngredients(ingredientsList.sort((a, b) => a.name.localeCompare(b.name)));
     });
 
     return () => unsubscribe();
@@ -194,12 +218,19 @@ const Admin: React.FC = () => {
     }
 
     try {
-      await addDoc(collection(db, "drinks"), {
+      const drinkData: any = {
         name: drinkName.trim(),
         icon: icon,
         category: category,
         available: true,
-      });
+      };
+
+      // Only add ingredients if it's a cocktail
+      if (category === "cocktail" && selectedIngredients.length > 0) {
+        drinkData.ingredients = selectedIngredients;
+      }
+
+      await addDoc(collection(db, "drinks"), drinkData);
 
       setNotification({
         message: `✅ Drink "${drinkName}" added successfully!`,
@@ -209,12 +240,122 @@ const Admin: React.FC = () => {
       setDrinkName("");
       setIcon("beer-bottle");
       setCategory(categories[0]);
+      setSelectedIngredients([]);
     } catch (error) {
       setNotification({
         message: '❌ Failed to add drink. Please try again.',
         type: 'error'
       });
       console.error("Error adding drink:", error);
+    }
+  };
+
+  const handleAddIngredient = async () => {
+    if (!ingredientName.trim()) {
+      setNotification({
+        message: '❌ Please enter an ingredient name',
+        type: 'error'
+      });
+      return;
+    }
+
+    try {
+      await addDoc(collection(db, "ingredients"), {
+        name: ingredientName.trim(),
+        available: true,
+        createdAt: Date.now(),
+      });
+
+      setNotification({
+        message: `✅ Ingredient "${ingredientName}" added successfully!`,
+        type: 'success'
+      });
+
+      setIngredientName("");
+    } catch (error) {
+      setNotification({
+        message: '❌ Failed to add ingredient. Please try again.',
+        type: 'error'
+      });
+      console.error("Error adding ingredient:", error);
+    }
+  };
+
+  const handleToggleIngredientAvailability = async (ingredientId: string, ingredientName: string, currentAvailability: boolean) => {
+    // Find all cocktails that use this ingredient
+    const affectedDrinks = drinks.filter(
+      drink => drink.category === "cocktail" && 
+      drink.ingredients && 
+      drink.ingredients.includes(ingredientId)
+    );
+
+    // Show confirmation if there are affected drinks
+    if (affectedDrinks.length > 0) {
+      const action = currentAvailability ? "unavailable" : "available";
+      const actionVerb = currentAvailability ? "mark" : "reactivate";
+      
+      setConfirmDialog({
+        type: 'toggleIngredient',
+        message: `${actionVerb.charAt(0).toUpperCase() + actionVerb.slice(1)}ing "${ingredientName}" as ${action} will also ${actionVerb} ${affectedDrinks.length} cocktail(s). Continue?`,
+        data: { ingredientId, ingredientName, currentAvailability, affectedDrinks }
+      });
+      return;
+    }
+
+    // If no affected drinks, proceed directly
+    await updateIngredientAndDrinks(ingredientId, !currentAvailability);
+  };
+
+  const updateIngredientAndDrinks = async (ingredientId: string, newAvailability: boolean) => {
+    try {
+      // Update ingredient availability
+      await updateDoc(doc(db, "ingredients", ingredientId), {
+        available: newAvailability,
+      });
+
+      // Find all cocktails that use this ingredient
+      const affectedDrinks = drinks.filter(
+        drink => drink.category === "cocktail" && 
+        drink.ingredients && 
+        drink.ingredients.includes(ingredientId)
+      );
+
+      if (affectedDrinks.length > 0) {
+        // Update all affected cocktails
+        const updatePromises = affectedDrinks.map(drink =>
+          updateDoc(doc(db, "drinks", drink.id), {
+            available: newAvailability,
+          })
+        );
+
+        await Promise.all(updatePromises);
+
+        if (newAvailability) {
+          setNotification({
+            message: `✅ Ingredient updated. ${affectedDrinks.length} cocktail(s) marked as available.`,
+            type: 'success'
+          });
+        } else {
+          setNotification({
+            message: `✅ Ingredient updated. ${affectedDrinks.length} cocktail(s) marked as unavailable.`,
+            type: 'success'
+          });
+        }
+      } else {
+        setNotification({
+          message: `✅ Ingredient "${confirmDialog.data?.ingredientName || 'ingredient'}" updated successfully!`,
+          type: 'success'
+        });
+      }
+
+      setConfirmDialog({ type: null, message: '' });
+    } catch (error) {
+      setNotification({
+        message: '❌ Failed to update ingredient. Please try again.',
+        type: 'error'
+      });
+      console.error("Error updating ingredient:", error);
+      setConfirmDialog({ type: null, message: '' });
     }
   };
 
@@ -269,6 +410,9 @@ const Admin: React.FC = () => {
       handleToggleBar();
     } else if (confirmDialog.type === 'rejectOrders') {
       handleRejectAllOrders();
+    } else if (confirmDialog.type === 'toggleIngredient') {
+      const { ingredientId, currentAvailability } = confirmDialog.data;
+      updateIngredientAndDrinks(ingredientId, !currentAvailability);
     }
   };
 
@@ -390,7 +534,14 @@ const Admin: React.FC = () => {
             label="Category"
             type="select"
             value={category}
-            onInput={(e) => setCategory((e.target as HTMLSelectElement).value)}
+            onInput={(e) => {
+              const newCategory = (e.target as HTMLSelectElement).value;
+              setCategory(newCategory);
+              // Clear ingredients if switching away from cocktail
+              if (newCategory !== "cocktail") {
+                setSelectedIngredients([]);
+              }
+            }}
           >
             {categories.map((cat) => (
               <option key={cat} value={cat}>
@@ -398,6 +549,59 @@ const Admin: React.FC = () => {
               </option>
             ))}
           </ListInput>
+
+          {category === "cocktail" && (
+            <div style={{ padding: "16px 0" }}>
+              <label style={{ 
+                display: "block", 
+                marginBottom: "12px", 
+                fontSize: "14px", 
+                color: "#aaa",
+                fontWeight: "500"
+              }}>
+                Ingredients (select all that apply):
+              </label>
+              {ingredients.length === 0 ? (
+                <p style={{ color: "#666", fontSize: "14px", fontStyle: "italic" }}>
+                  No ingredients available. Add ingredients below first.
+                </p>
+              ) : (
+                <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                  {ingredients.map((ingredient) => (
+                    <label
+                      key={ingredient.id}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        padding: "12px",
+                        borderRadius: "8px",
+                        backgroundColor: "rgba(255, 255, 255, 0.03)",
+                        border: "1px solid rgba(255, 255, 255, 0.1)",
+                        cursor: "pointer",
+                      }}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={selectedIngredients.includes(ingredient.id)}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setSelectedIngredients([...selectedIngredients, ingredient.id]);
+                          } else {
+                            setSelectedIngredients(selectedIngredients.filter(id => id !== ingredient.id));
+                          }
+                        }}
+                        style={{ marginRight: "12px", width: "18px", height: "18px" }}
+                      />
+                      <span style={{ flex: 1 }}>{ingredient.name.charAt(0).toUpperCase() + ingredient.name.slice(1)}</span>
+                      <Badge color={ingredient.available ? "green" : "red"} style={{ fontSize: "12px" }}>
+                        {ingredient.available ? "Available" : "Out"}
+                      </Badge>
+                    </label>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
         </List>
 
         <Button
@@ -500,6 +704,102 @@ const Admin: React.FC = () => {
         )}
       </Block>
 
+      {/* Ingredients Management Section */}
+      <Block strong style={{ marginTop: "24px" }}>
+        <h2 style={{ marginTop: 0, marginBottom: "16px" }}>Manage Ingredients</h2>
+        
+        {/* Add Ingredient Form */}
+        <div style={{ marginBottom: "24px" }}>
+          <List>
+            <ListInput
+              label="Ingredient Name"
+              type="text"
+              placeholder="Enter ingredient name (e.g., tequila)"
+              value={ingredientName}
+              onInput={(e) => setIngredientName((e.target as HTMLInputElement).value)}
+            />
+          </List>
+          <Button
+            fill
+            color="blue"
+            disabled={!ingredientName.trim()}
+            onClick={handleAddIngredient}
+            style={{ marginTop: "16px" }}
+          >
+            Add Ingredient
+          </Button>
+        </div>
+
+        {/* Ingredients List */}
+        {ingredients.length > 0 ? (
+          <List style={{ listStyle: 'none', padding: 0 }}>
+            {ingredients.map((ingredient) => (
+              <div key={ingredient.id} style={{ marginBottom: "12px" }}>
+                <ListItem
+                  title={ingredient.name.charAt(0).toUpperCase() + ingredient.name.slice(1)}
+                  style={{
+                    borderRadius: "12px",
+                    marginBottom: 0,
+                    border: "1px solid rgba(255, 255, 255, 0.15)",
+                    backgroundColor: "rgba(255, 255, 255, 0.03)",
+                    padding: "16px",
+                  }}
+                >
+                  <div slot="after" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <Badge color={ingredient.available ? 'green' : 'red'} style={{ fontSize: '14px', padding: '6px 12px' }}>
+                      {ingredient.available ? 'Available' : 'Out'}
+                    </Badge>
+                    <div
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        e.preventDefault();
+                        handleToggleIngredientAvailability(ingredient.id, ingredient.name, ingredient.available);
+                      }}
+                      onMouseDown={(e) => {
+                        e.stopPropagation();
+                        e.preventDefault();
+                      }}
+                      style={{
+                        width: '50px',
+                        height: '28px',
+                        borderRadius: '14px',
+                        backgroundColor: ingredient.available ? '#4CAF50' : '#666',
+                        position: 'relative',
+                        cursor: 'pointer',
+                        transition: 'background-color 0.3s ease',
+                        padding: '2px',
+                        boxSizing: 'border-box',
+                        flexShrink: 0,
+                        userSelect: 'none',
+                        WebkitTapHighlightColor: 'transparent',
+                      }}
+                    >
+                      <div
+                        style={{
+                          width: '24px',
+                          height: '24px',
+                          borderRadius: '50%',
+                          backgroundColor: '#fff',
+                          position: 'absolute',
+                          top: '2px',
+                          left: ingredient.available ? '24px' : '2px',
+                          transition: 'left 0.3s ease',
+                          boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
+                        }}
+                      />
+                    </div>
+                  </div>
+                </ListItem>
+              </div>
+            ))}
+          </List>
+        ) : (
+          <Block style={{ textAlign: "center", padding: "40px 20px", color: "#666" }}>
+            <p>No ingredients yet. Add your first ingredient above!</p>
+          </Block>
+        )}
+      </Block>
+
       {/* Confirmation Dialog for Admin Actions */}
       {confirmDialog.type && (
         <div
@@ -523,8 +823,10 @@ const Admin: React.FC = () => {
               backgroundColor: '#1a1a1a',
               borderRadius: '12px',
               padding: '24px',
-              maxWidth: '400px',
+              maxWidth: '500px',
               width: '100%',
+              maxHeight: '80vh',
+              overflowY: 'auto',
               boxShadow: '0 8px 24px rgba(0,0,0,0.5)',
             }}
             onClick={(e) => e.stopPropagation()}
@@ -532,9 +834,28 @@ const Admin: React.FC = () => {
             <h3 style={{ marginTop: 0, marginBottom: '16px', color: '#fff' }}>
               Confirm Action
             </h3>
-            <p style={{ marginBottom: '24px', color: '#aaa', lineHeight: '1.5' }}>
+            <p style={{ marginBottom: '24px', color: '#aaa', lineHeight: '1.5', whiteSpace: 'pre-line' }}>
               {confirmDialog.message}
             </p>
+            {confirmDialog.type === 'toggleIngredient' && confirmDialog.data?.affectedDrinks && (
+              <div style={{ 
+                marginBottom: '24px', 
+                padding: '12px', 
+                backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                borderRadius: '8px',
+                maxHeight: '200px',
+                overflowY: 'auto'
+              }}>
+                <p style={{ margin: '0 0 8px 0', fontSize: '14px', fontWeight: '600', color: '#fff' }}>
+                  Affected cocktails:
+                </p>
+                <ul style={{ margin: 0, paddingLeft: '20px', color: '#aaa' }}>
+                  {confirmDialog.data.affectedDrinks.map((drink: Drink) => (
+                    <li key={drink.id} style={{ marginBottom: '4px' }}>{drink.name}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
             <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
               <Button
                 outline
@@ -544,7 +865,13 @@ const Admin: React.FC = () => {
                 Cancel
               </Button>
               <Button
-                color={confirmDialog.type === 'toggleBar' ? (barOpen ? 'red' : 'green') : 'orange'}
+                color={
+                  confirmDialog.type === 'toggleBar' 
+                    ? (barOpen ? 'red' : 'green') 
+                    : confirmDialog.type === 'toggleIngredient'
+                    ? 'orange'
+                    : 'orange'
+                }
                 onClick={confirmAction}
                 style={{ minWidth: '80px' }}
               >

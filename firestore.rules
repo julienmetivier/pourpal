@@ -23,6 +23,13 @@ service cloud.firestore {
       allow create, update: if true; // Allow updating settings (for admin)
       allow delete: if false; // Prevent deletion of settings
     }
+    
+    // Allow read and write access to ingredients collection
+    match /ingredients/{ingredientId} {
+      allow read: if true; // Allow reading ingredients
+      allow create, update: if true; // Allow creating/updating ingredients (for admin)
+      allow delete: if false; // Prevent deletion of ingredients
+    }
   }
 }
 
