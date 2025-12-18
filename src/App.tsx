@@ -36,7 +36,19 @@ const PourPal = () => {
   const [notification, setNotification] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (u) => setUser(u));
+    const unsubscribe = onAuthStateChanged(auth, (u) => {
+      setUser(u);
+      // Extract employeeId from email when user is authenticated
+      if (u && u.email) {
+        const emailPrefix = u.email.split('@')[0];
+        if (emailPrefix === 'julien' || emailPrefix === 'guest') {
+          setEmployeeId(emailPrefix);
+        }
+      } else {
+        // Reset to guest when logged out
+        setEmployeeId('guest');
+      }
+    });
     return () => unsubscribe();
   }, []);
 

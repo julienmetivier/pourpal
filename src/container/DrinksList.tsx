@@ -15,19 +15,25 @@ type Drink = {
 
 type DrinksListProps = {
   selectedDrink: string;
+  selectedCategory?: string | null;
   onChange: (drinkName: string) => void;
 };
 
-const DrinksList: React.FC<DrinksListProps> = ({ selectedDrink, onChange }) => {
+const DrinksList: React.FC<DrinksListProps> = ({ selectedDrink, selectedCategory, onChange }) => {
   const [drinks, setDrinks] = useState<Drink[]>([]);
 
   useEffect(() => {
     const fetchDrinks = async () => {
       const querySnapshot = await getDocs(collection(db, "drinks"));
-      const drinkList: Drink[] = querySnapshot.docs.map((doc) => ({
+      let drinkList: Drink[] = querySnapshot.docs.map((doc) => ({
         id: doc.id,
         ...doc.data(),
       })) as Drink[];
+      
+      // Filter by category if selected
+      if (selectedCategory) {
+        drinkList = drinkList.filter(drink => drink.category === selectedCategory);
+      }
       
       // Sort drinks: available first, unavailable last
       const sortedDrinks = drinkList.sort((a, b) => {
@@ -39,7 +45,7 @@ const DrinksList: React.FC<DrinksListProps> = ({ selectedDrink, onChange }) => {
     };
 
     fetchDrinks();
-  }, []);
+  }, [selectedCategory]);
 
   const getIcon = (iconName: string) => {
     switch (iconName) {
@@ -60,49 +66,66 @@ const DrinksList: React.FC<DrinksListProps> = ({ selectedDrink, onChange }) => {
         Select from available drinks below:
       </p>
 
-      <List mediaList style={{ listStyle: 'none' }}>
-        {drinks.map((drink) => {
-          const isSelected = drink.name === selectedDrink;
-          return (
-            <div key={drink.id} style={{ marginBottom: "12px" }}>
-              <ListItem
-                title={drink.name}
-                className={!drink.available ? "opacity-50" : ""}
-                style={{
-                  boxShadow: isSelected 
-                    ? "0 0 0 2px #4CAF50 inset" 
-                    : "0 2px 6px rgba(0,0,0,0.2)",
-                  borderRadius: "12px",
-                  padding: "16px",
-                  backgroundColor: isSelected 
-                    ? "rgba(76, 175, 80, 0.15)" 
-                    : "rgba(255, 255, 255, 0.05)",
-                  border: isSelected 
-                    ? "1px solid rgba(76, 175, 80, 0.3)" 
-                    : "1px solid rgba(255, 255, 255, 0.1)",
-                  transition: "all 0.2s ease",
-                  marginBottom: 0,
-                }}
-                disabled={!drink.available}
-                onClick={() => drink.available && onChange(drink.name)}
-              >
-                <div slot="media" style={{ fontSize: 28, marginRight: "12px" }}>
-                  {getIcon(drink.icon)}
-                </div>
-                <span slot="after">
-                  {drink.available ? (
-                    <Badge color="green" style={{ fontWeight: "600" }}>
-                      Available
-                    </Badge>
-                  ) : (
-                    <Badge color="gray" style={{ fontWeight: "600" }}>Out</Badge>
-                  )}
-                </span>
-              </ListItem>
-            </div>
-          );
-        })}
-      </List>
+      {drinks.length === 0 ? (
+        <div style={{
+          padding: '40px 20px',
+          textAlign: 'center',
+          color: '#666',
+          borderRadius: '12px',
+          backgroundColor: 'rgba(255, 255, 255, 0.03)',
+          border: '1px solid rgba(255, 255, 255, 0.1)'
+        }}>
+          <p style={{ margin: 0, fontSize: '16px', fontWeight: '500' }}>
+            {selectedCategory 
+              ? `No drinks available for ${selectedCategory} category`
+              : 'No drinks available'}
+          </p>
+        </div>
+      ) : (
+        <List mediaList style={{ listStyle: 'none' }}>
+          {drinks.map((drink) => {
+            const isSelected = drink.name === selectedDrink;
+            return (
+              <div key={drink.id} style={{ marginBottom: "12px" }}>
+                <ListItem
+                  title={drink.name}
+                  className={!drink.available ? "opacity-50" : ""}
+                  style={{
+                    boxShadow: isSelected 
+                      ? "0 0 0 2px #4CAF50 inset" 
+                      : "0 2px 6px rgba(0,0,0,0.2)",
+                    borderRadius: "12px",
+                    padding: "16px",
+                    backgroundColor: isSelected 
+                      ? "rgba(76, 175, 80, 0.15)" 
+                      : "rgba(255, 255, 255, 0.05)",
+                    border: isSelected 
+                      ? "1px solid rgba(76, 175, 80, 0.3)" 
+                      : "1px solid rgba(255, 255, 255, 0.1)",
+                    transition: "all 0.2s ease",
+                    marginBottom: 0,
+                  }}
+                  disabled={!drink.available}
+                  onClick={() => drink.available && onChange(drink.name)}
+                >
+                  <div slot="media" style={{ fontSize: 28, marginRight: "12px" }}>
+                    {getIcon(drink.icon)}
+                  </div>
+                  <span slot="after">
+                    {drink.available ? (
+                      <Badge color="green" style={{ fontWeight: "600" }}>
+                        Available
+                      </Badge>
+                    ) : (
+                      <Badge color="gray" style={{ fontWeight: "600" }}>Out</Badge>
+                    )}
+                  </span>
+                </ListItem>
+              </div>
+            );
+          })}
+        </List>
+      )}
     </div>
   );
 };

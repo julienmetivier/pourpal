@@ -16,7 +16,10 @@ const Order: React.FC<OrderProps> = ({ employeeId, user }) => {
   const [drink, setDrink] = useState("");
   const [clientName, setClientName] = useState("");
   const [barOpen, setBarOpen] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [notification, setNotification] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+  
+  const categories = ["beer", "wine", "cocktail"];
 
   useEffect(() => {
     if (notification) {
@@ -138,9 +141,55 @@ const Order: React.FC<OrderProps> = ({ employeeId, user }) => {
             </div>
           )}
           
+          {/* Category Filter */}
+          <div style={{ marginBottom: "20px" }}>
+            <div style={{ 
+              display: 'flex', 
+              gap: '8px', 
+              flexWrap: 'wrap',
+              justifyContent: 'center'
+            }}>
+              <Button
+                small
+                outline={selectedCategory !== null}
+                fill={selectedCategory === null}
+                onClick={() => setSelectedCategory(null)}
+                style={{
+                  borderRadius: '16px',
+                  padding: '8px 16px',
+                  fontSize: '14px',
+                  textTransform: 'capitalize'
+                }}
+              >
+                All
+              </Button>
+              {categories.map((category) => {
+                const isSelected = selectedCategory === category;
+                return (
+                  <Button
+                    key={category}
+                    small
+                    outline={!isSelected}
+                    fill={isSelected}
+                    onClick={() => setSelectedCategory(category)}
+                    style={{
+                      borderRadius: '16px',
+                      padding: '8px 16px',
+                      fontSize: '14px',
+                      textTransform: 'capitalize'
+                    }}
+                  >
+                    {category}
+                  </Button>
+                );
+              })}
+            </div>
+          </div>
+          
           <div style={{ marginBottom: "24px" }}>
             <DrinksList
               selectedDrink={drink}
+              selectedCategory={selectedCategory}
               onChange={(selected) => {
                 if (selected === drink) {
                   setDrink("");
