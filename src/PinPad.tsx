@@ -1,5 +1,5 @@
 import React, { useMemo, useState, useRef, useEffect } from "react";
-import { Block, Button, Icon } from "framework7-react";
+import { Block, Button } from "framework7-react";
 
 export type PinPadProps = {
   /** Current value (controlled). If omitted, component is uncontrolled */
