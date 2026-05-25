@@ -32,6 +32,7 @@ type Drink = {
   icon: string;
   category: string;
   available: boolean;
+  imageUrl?: string;
   ingredients?: string[]; // Array of ingredient document IDs
 };
 
@@ -43,6 +44,7 @@ type Ingredient = {
 
 const Admin: React.FC = () => {
   const [drinkName, setDrinkName] = useState("");
+  const [imageUrl, setImageUrl] = useState("");
   const [icon, setIcon] = useState("beer-bottle");
   const [category, setCategory] = useState(categories[0]);
   const [selectedIngredients, setSelectedIngredients] = useState<string[]>([]);
@@ -283,6 +285,11 @@ const Admin: React.FC = () => {
         available: true,
       };
 
+      const trimmedImageUrl = imageUrl.trim();
+      if (trimmedImageUrl) {
+        drinkData.imageUrl = trimmedImageUrl;
+      }
+
       // Only add ingredients if it's a cocktail
       if (category === "cocktail" && selectedIngredients.length > 0) {
         drinkData.ingredients = selectedIngredients;
@@ -296,6 +303,7 @@ const Admin: React.FC = () => {
       });
 
       setDrinkName("");
+      setImageUrl("");
       setIcon("beer-bottle");
       setCategory(categories[0]);
       setSelectedIngredients([]);
@@ -561,6 +569,14 @@ const Admin: React.FC = () => {
             placeholder="Enter drink name"
             value={drinkName}
             onInput={(e) => setDrinkName((e.target as HTMLInputElement).value)}
+          />
+
+          <ListInput
+            label="Card image URL"
+            type="url"
+            placeholder="https://… (optional, for cards view)"
+            value={imageUrl}
+            onInput={(e) => setImageUrl((e.target as HTMLInputElement).value)}
           />
 
           <ListInput
