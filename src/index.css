@@ -27,3 +27,7 @@ code {
   -webkit-appearance: none;
   appearance: none;
 }
+
+.drinks-cards-track::-webkit-scrollbar {
+  display: none;
+}

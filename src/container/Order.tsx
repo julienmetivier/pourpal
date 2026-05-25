@@ -105,10 +105,6 @@ const Order: React.FC<OrderProps> = ({ employeeId, user }) => {
       )}
       <div style={{ display: 'flex', flexDirection: 'column', height: '100%', paddingBottom: '140px' }}>
         <Block strong>
-          <h2 style={{ marginTop: 0, marginBottom: "24px", fontSize: "24px", fontWeight: "600" }}>
-            New Order
-          </h2>
-          
           {!barOpen && (
             <div style={{
               padding: '16px',
